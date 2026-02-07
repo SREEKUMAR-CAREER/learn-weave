@@ -1,251 +1,245 @@
-import { 
-  Container, 
-  Title, 
-  Text, 
-  Grid, 
-  Image, 
-  Card, 
-  Badge, 
-  Group, 
-  Button, 
+import {
+  Container,
+  Title,
+  Text,
+  Grid,
+  Button,
   Stack,
-  ThemeIcon,
-  Transition,
-  createStyles,
+  Box,
+  Badge,
+  useMantineTheme,
+  Group,
 } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  IconRocket, 
-  IconBulb, 
-  IconUserCheck, 
-  IconWorld, 
-  IconBrain, 
-  IconDeviceLaptop,
+import {
+  IconRocket,
+  IconBulb,
+  IconUserCheck,
+  IconWorld,
+  IconBrain,
+  IconArrowRight,
+  IconSparkles,
+  IconFlame,
 } from '@tabler/icons-react';
-
-const useStyles = createStyles((theme) => ({
-  wrapper: {
-    paddingTop: theme.spacing.xl * 2,
-    paddingBottom: theme.spacing.xl * 2,
-  },
-  
-  title: {
-    fontFamily: `'Roboto', ${theme.fontFamily}`,
-    fontWeight: 900,
-    textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 50,
-    
-    [theme.fn.smallerThan('sm')]: {
-      fontSize: 28,
-    },
-  },
-  
-  description: {
-    textAlign: 'center',
-    maxWidth: 600,
-    margin: '0 auto',
-    marginBottom: theme.spacing.xl * 1.5,
-  },
-  
-  card: {
-    border: `1px solid ${
-      theme.colorScheme === 'dark' ? theme.colors.dark[5] : theme.colors.gray[2]
-    }`,
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-    '&:hover': {
-      transform: 'translateY(-5px)',
-      boxShadow: theme.shadows.md,
-    }
-  },
-  
-  timelineTitle: {
-    color: theme.colorScheme === 'dark' ? theme.white : theme.black,
-    fontWeight: 700,
-  },
-
-  highlight: {
-    backgroundColor:
-      theme.colorScheme === 'dark'
-        ? theme.fn.rgba(theme.colors.teal[6], 0.55)
-        : theme.colors.teal[0],
-    borderRadius: theme.radius.sm,
-    padding: '3px 5px',
-  },
-}));
+import { motion } from 'framer-motion';
+import './About.css';
 
 function About() {
   const { t } = useTranslation('about');
-  const { classes } = useStyles();
-  const [visible, setVisible] = useState(false);
+  const theme = useMantineTheme();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   const handleButtonClick = () => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
-    } else {
-      navigate('/auth/login');
-    }
+    navigate(isAuthenticated ? '/dashboard' : '/auth/login');
   };
-  
-  useEffect(() => {
-    setVisible(true);
-  }, []);
+
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+  };
 
   return (
-    <Container size="xl" className={classes.wrapper}>
-      <Transition mounted={visible} transition="fade" duration={800} timingFunction="ease">
-        {(styles) => (
-          <div style={styles} >
-            <Title
-              className={classes.title}
-              variant="gradient"
-              gradient={{ from: 'cyan', to: 'teal' }}
-              order={1}
-              size="2.6rem"
-            >
-              {t('mainTitle.about')} {t('mainTitle.learnweave')}
-            </Title>
+    <div className="about-wrapper">
+      <div className="about-decor-1" />
+      <div className="about-decor-2" />
 
-            <Grid position="center" align='center' gutter={50} mb={60}>
-              <Grid.Col md={6}>
-                <Stack spacing="xl">
-                  <Text size="xl">
-                    {t('mainDescription')}
-                  </Text>
+      <Container size="xl">
+        {/* --- Hero Section --- */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          className="about-hero"
+        >
+          <Badge
+            variant="filled"
+            size="lg"
+            mb="xl"
+            sx={{
+              background: 'rgba(13, 148, 136, 0.1)',
+              color: '#0d9488',
+              fontWeight: 800,
+              padding: '12px 20px',
+              borderRadius: '12px'
+            }}
+          >
+            THE FUTURE OF LEARNING
+          </Badge>
+          <Title className="about-title">
+            <Box component="span" sx={{
+              background: 'linear-gradient(135deg, #0d9488 0%, #06b6d4 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Architecting Human Potential
+            </Box>
+          </Title>
+          <Text className="about-description">
+            LearnWeave is more than a platform. It's an intelligent ecosystem designed to weave together knowledge, focus, and progress into a seamless mastery experience.
+          </Text>
+        </motion.div>
 
-                  <Text>
-                    {t('learningApproach')}
-                  </Text>
+        {/* --- Bento Grid Section --- */}
+        <div className="bento-grid">
+          {/* Card 1: Main Vision */}
+          <Box
+            component={motion.div}
+            className="bento-item bento-large"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <div className="bento-icon-box">
+              <IconBrain size={32} />
+            </div>
+            <span className="bento-tag">The Core Vision</span>
+            <Title order={2} size={36} mb="xl" weight={900}>Neural Learning Optimization</Title>
+            <Text size="lg" color="dimmed" sx={{ lineHeight: 1.8, maxWidth: '90%' }}>
+              We believe learning shouldn't be fragmented. By utilizing advanced AI algorithms, we "weave" complex subjects into structured, digestible hierarchies that align with how the human brain actually processes information.
+            </Text>
+            <Box sx={{ flex: 1 }} />
+            <Group mt={40}>
+              <Button
+                variant="subtle"
+                color="teal"
+                rightIcon={<IconArrowRight size={18} />}
+                sx={{ fontWeight: 800 }}
+                onClick={handleButtonClick}
+              >
+                Explore Dashboard
+              </Button>
+            </Group>
+          </Box>
 
-                  <Group>
-                    <Button
-                      variant="gradient"
-                      gradient={{ from: 'cyan', to: 'teal' }}
-                      size="lg"
-                      radius="md"
-                      leftIcon={<IconRocket size={20} />}
-                      onClick={handleButtonClick}
-                    >
-                      {t('buttons.startYourJourney')}
-                    </Button>
-                  </Group>
-                </Stack>
-              </Grid.Col>
+          {/* Card 2: Global Impact */}
+          <Box
+            component={motion.div}
+            className="bento-item bento-small"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <div className="bento-icon-box" style={{ color: '#06b6d4' }}>
+              <IconWorld size={32} />
+            </div>
+            <span className="bento-tag" style={{ color: '#06b6d4' }}>Accessibility</span>
+            <Title order={3} size={24} mb="md" weight={900}>Global Knowledge Mesh</Title>
+            <Text color="dimmed">
+              Breaking down geographical and economic barriers to high-level education through decentralized AI-driven curriculums.
+            </Text>
+          </Box>
 
-              <Grid.Col md={6}>
-                <Image
-                  src="https://images.unsplash.com/photo-1522881451255-f59ad836fdfb"
-                  radius="md"
-                  alt={t('imageAlt')}
-                  caption={t('imageCaption')}
-                />
-              </Grid.Col>
-            </Grid>
+          {/* Card 3: Experience */}
+          <Box
+            component={motion.div}
+            className="bento-item bento-small"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <div className="bento-icon-box" style={{ color: '#6366f1' }}>
+              <IconSparkles size={32} />
+            </div>
+            <span className="bento-tag" style={{ color: '#6366f1' }}>Experience</span>
+            <Title order={3} size={24} mb="md" weight={900}>Premium Workflow</Title>
+            <Text color="dimmed">
+              A distraction-free interface engineered for deep work session and state-of-the-art information retention.
+            </Text>
+          </Box>
 
-            {/* Our Mission */}
-            <Card p="xl" radius="md" mb={60} withBorder>
-              <Group position="center" mb="lg">
-                <ThemeIcon size={60} radius="md" variant="light" color="teal">
-                  <IconBulb size={34} />
-                </ThemeIcon>
-              </Group>
+          {/* Card 4: Focus */}
+          <Box
+            component={motion.div}
+            className="bento-item bento-medium"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <div className="bento-icon-box" style={{ color: '#f59e0b' }}>
+              <IconFlame size={32} />
+            </div>
+            <span className="bento-tag" style={{ color: '#f59e0b' }}>Methodology</span>
+            <Title order={3} size={28} mb="md" weight={900}>The Weaving Method</Title>
+            <Text color="dimmed" size="lg">
+              Our unique approach combines Spaced Repetition, Pomodoro focus techniques, and AI synthesis to create a curriculum that evolves with your performance.
+            </Text>
+          </Box>
 
-              <Title order={2} align="center" mb="md">{t('mission.title')}</Title>
+          {/* Card 5: Trust */}
+          <Box
+            component={motion.div}
+            className="bento-item bento-medium"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeInUp}
+          >
+            <div className="bento-icon-box" style={{ color: '#ec4899' }}>
+              <IconUserCheck size={32} />
+            </div>
+            <span className="bento-tag" style={{ color: '#ec4899' }}>Community</span>
+            <Title order={3} size={28} mb="md" weight={900}>User-Centric Design</Title>
+            <Text color="dimmed" size="lg">
+              Every feature we build is directly inspired by our community of lifelong learners, researchers, and professional developers.
+            </Text>
+          </Box>
+        </div>
 
-              <Text size="lg" align="center" mb="xl">
-                {t('mission.description')}
-              </Text>
-
-              <Grid>
-                <Grid.Col sm={6} md={3}>
-                  <Card shadow="sm" p="md" radius="md" className={classes.card}>
-                    <ThemeIcon size={40} radius="md" color="teal">
-                      <IconUserCheck size={24} />
-                    </ThemeIcon>
-                    <Text weight={700} mt="sm">{t('mission.item1Title')}</Text>
-                    <Text size="sm" color="dimmed">
-                      {t('mission.item1Description')}
-                    </Text>
-                  </Card>
-                </Grid.Col>
-
-                <Grid.Col sm={6} md={3}>
-                  <Card shadow="sm" p="md" radius="md" className={classes.card}>
-                    <ThemeIcon size={40} radius="md" color="cyan">
-                      <IconWorld size={24} />
-                    </ThemeIcon>
-                    <Text weight={700} mt="sm">{t('mission.item2Title')}</Text>
-                    <Text size="sm" color="dimmed">
-                      {t('mission.item2Description')}
-                    </Text>
-                  </Card>
-                </Grid.Col>
-
-                <Grid.Col sm={6} md={3}>
-                  <Card shadow="sm" p="md" radius="md" className={classes.card}>
-                    <ThemeIcon size={40} radius="md" color="blue">
-                      <IconBrain size={24} />
-                    </ThemeIcon>
-                    <Text weight={700} mt="sm">{t('mission.item3Title')}</Text>
-                    <Text size="sm" color="dimmed">
-                      {t('mission.item3Description')}
-                    </Text>
-                  </Card>
-                </Grid.Col>
-
-                <Grid.Col sm={6} md={3}>
-                  <Card shadow="sm" p="md" radius="md" className={classes.card}>
-                    <ThemeIcon size={40} radius="md" color="indigo">
-                      <IconDeviceLaptop size={24} />
-                    </ThemeIcon>
-                    <Text weight={700} mt="sm">{t('mission.item4Title')}</Text>
-                    <Text size="sm" color="dimmed">
-                      {t('mission.item4Description')}
-                    </Text>
-                  </Card>
-                </Grid.Col>
-              </Grid>
-            </Card>
-
-            {/* Contact CTA */}
-            <Card
-              p="xl"
-              radius="lg"
-              sx={(theme) => ({
-                backgroundImage: theme.fn.gradient({ from: 'cyan', to: 'teal', deg: 45 }),
-              })}
-            >
-              <Grid align="center">
-                <Grid.Col md={8}>
-                  <Title order={2} color="white">{t('cta.title')}</Title>
-                  <Text color="white" size="lg" mt="xs">
-                    {t('cta.subtitle')}
-                  </Text>
-                </Grid.Col>
-
-                <Grid.Col md={4} sx={{ display: 'flex', justifyContent: 'center' }}>
-                  <Button
-                    variant="white"
-                    color="dark"
-                    size="lg"
-                    radius="md"
-                    onClick={handleButtonClick}
-                  >
-                    {t('cta.button')}
-                  </Button>
-                </Grid.Col>
-              </Grid>
-            </Card>
-          </div>
-        )}
-      </Transition>
-    </Container>
+        {/* --- Final CTA --- */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <Box className="glass-cta">
+            <div className="glass-cta-inner">
+              <Stack align="center" spacing="xl">
+                <IconRocket size={64} />
+                <Title size={isMobile ? 32 : 54} weight={900} lts={-2}>Ready to Weave Your Future?</Title>
+                <Text size="xl" sx={{ maxWidth: 600, opacity: 0.9, fontWeight: 500 }}>
+                  Join thousands of elite learners who are already using LearnWeave to master complex subjects at 5x speed.
+                </Text>
+                <Button
+                  size="xl"
+                  variant="white"
+                  color="teal"
+                  radius="xl"
+                  px={60}
+                  mt={20}
+                  onClick={handleButtonClick}
+                  rightIcon={<IconArrowRight size={22} />}
+                  sx={{
+                    height: 70,
+                    fontSize: 20,
+                    fontWeight: 900,
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-5px) scale(1.02)',
+                      boxShadow: '0 30px 60px rgba(0,0,0,0.3)',
+                    }
+                  }}
+                >
+                  Start Mastery Now
+                </Button>
+              </Stack>
+            </div>
+          </Box>
+        </motion.div>
+      </Container>
+    </div>
   );
 }
+
+const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
 export default About;

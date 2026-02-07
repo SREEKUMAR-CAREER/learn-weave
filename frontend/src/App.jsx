@@ -17,7 +17,6 @@ import ChapterView from './pages/ChapterView';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import LandingPage from './pages/LandingPage';
-import PricingPage from './pages/PricingPage';
 import AppLayout from './layouts/AppLayout';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -48,11 +47,14 @@ function App() {
     localStorage.setItem('mantine-color-scheme', nextColorScheme);
   };
 
-  // Ensure localStorage is updated when the component mounts if it wasn't set before
+  // Sync theme with document body for custom CSS selectors
   useEffect(() => {
-    if (!localStorage.getItem('mantine-color-scheme')) {
-      localStorage.setItem('mantine-color-scheme', colorScheme);
+    if (colorScheme === 'dark') {
+      document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark');
     }
+    localStorage.setItem('mantine-color-scheme', colorScheme);
   }, [colorScheme]);
 
   return (
@@ -72,53 +74,54 @@ function App() {
       }}>
         <AuthProvider>
           {/*<NotificationProvider>*/}
-            <ToolbarProvider>
-              <PomodoroProvider>
-                  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                    <Routes>
-                    {/* Public routes with MainLayout */}
-                    <Route element={<MainLayout />}>
-                      <Route path="/" element={<LandingPage />} /> {/* LandingPage now at root */}
-                      <Route path="/auth/login" element={<Login />} />
-                      <Route path="/auth/signup" element={<Register />} />
-                      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/pricing" element={<PricingPage />} />
-                      <Route path="/impressum" element={<Impressum />} />
-                      <Route path="/privacy" element={<Privacy />} />
+          <ToolbarProvider>
+            <PomodoroProvider>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <Routes>
+                  {/* Public routes with MainLayout */}
+                  <Route element={<MainLayout />}>
+                    <Route path="/" element={<LandingPage />} /> {/* LandingPage now at root */}
+                    <Route path="/auth/login" element={<Login />} />
+                    <Route path="/auth/signup" element={<Register />} />
+                    <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/impressum" element={<Impressum />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                  </Route>
+                  {/* Protected routes now based at /dashboard */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/dashboard" element={<AppLayout />}> {/* Base path for dashboard and other protected routes */}
+                      <Route index element={<Dashboard />} /> {/* This will be /dashboard */}
+                      <Route path="public-courses" element={<PublicCourses />} />
+                      <Route path="my-courses" element={<MyCourses />} />
+                      <Route path="create-course" element={<CreateCourse />} /> {/* /dashboard/create-course */}
+                      <Route path="courses/:courseId" element={<CourseView />} /> {/* /dashboard/courses/:courseId */}
+                      <Route path="courses/:courseId/chapters/:chapterId" element={<ChapterView />} /> {/* /dashboard/courses/:courseId/chapters/:chapterId */}
+                      <Route path="settings" element={<SettingsPage />} /> {/* /dashboard/settings */}
+                      <Route path="statistics" element={<StatisticsPage />} /> {/* /dashboard/statistics */}
+                      <Route path="anki-generator" element={<AnkiGeneratorDashboard />} />
+                      <Route path="anki-generator/processing/:taskId" element={<AnkiProcessingStatus />} />
                     </Route>
-                      {/* Protected routes now based at /dashboard */}
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/dashboard" element={<AppLayout />}> {/* Base path for dashboard and other protected routes */}
-                        <Route index element={<Dashboard />} /> {/* This will be /dashboard */}
-                        <Route path="public-courses" element={<PublicCourses />} />
-                        <Route path="my-courses" element={<MyCourses />} />
-                        <Route path="create-course" element={<CreateCourse />} /> {/* /dashboard/create-course */}
-                        <Route path="courses/:courseId" element={<CourseView />} /> {/* /dashboard/courses/:courseId */}
-                        <Route path="courses/:courseId/chapters/:chapterId" element={<ChapterView />} /> {/* /dashboard/courses/:courseId/chapters/:chapterId */}
-                        <Route path="settings" element={<SettingsPage />} /> {/* /dashboard/settings */}
-                        <Route path="statistics" element={<StatisticsPage />} /> {/* /dashboard/statistics */}
-                        <Route path="anki-generator" element={<AnkiGeneratorDashboard />} />
-                        <Route path="anki-generator/processing/:taskId" element={<AnkiProcessingStatus />} />
-                      </Route>
-                    </Route>
-                      {/* Admin-only routes - Using AppLayout for consistent interface */}
+                  </Route>
+                  {/* Admin-only routes - Using AppLayout for consistent interface */}
+                  <Route element={<AdminProtectedRoute />}>
                     <Route element={<AdminProtectedRoute />}>
                       <Route path="/admin" element={<AppLayout />}>
                         <Route index element={<AdminView />} />
                         {/* Add other admin routes here */}
                       </Route>
                     </Route>
+                  </Route>
 
-                    {/* Old redirects removed as new routing handles root and protected areas explicitly */}
-                    <Route path="*" element={<NotFoundPage />} /> {/* Catch-all route for 404 */}
-                  </Routes>          
-                  </BrowserRouter>
-                  <ToastContainer position="top-right" autoClose={3000} theme={colorScheme} />
-                </PomodoroProvider>
-              </ToolbarProvider>
-            {/*</NotificationProvider>*/}
-          </AuthProvider>
+                  {/* Old redirects removed as new routing handles root and protected areas explicitly */}
+                  <Route path="*" element={<NotFoundPage />} /> {/* Catch-all route for 404 */}
+                </Routes>
+              </BrowserRouter>
+              <ToastContainer position="top-right" autoClose={3000} theme={colorScheme} />
+            </PomodoroProvider>
+          </ToolbarProvider>
+          {/*</NotificationProvider>*/}
+        </AuthProvider>
       </MantineProvider>
     </ColorSchemeProvider>
   );

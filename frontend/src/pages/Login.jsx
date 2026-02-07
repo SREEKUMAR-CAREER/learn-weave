@@ -3,40 +3,35 @@ import { useNavigate, Link } from "react-router-dom";
 import {
   TextInput,
   PasswordInput,
-  Paper,
-  Title,
-  Container,
   Button,
   Text,
   Anchor,
   Stack,
   Divider,
   Box,
-  Space,
-  Image,
-  useMantineColorScheme,
-  useMantineTheme,
   Group,
+  UnstyledButton,
+  Image,
 } from "@mantine/core";
-import { IconSun, IconMoonStars } from "@tabler/icons-react";
+import {
+  IconBrandGoogleFilled,
+  IconRocket,
+  IconSparkles,
+  IconShieldCheck,
+  IconChevronDown,
+} from "@tabler/icons-react";
 import { useForm } from "@mantine/form";
 import { useAuth } from "../contexts/AuthContext";
 import authService from "../api/authService";
-import { IconBrandGoogleFilled } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
+import "./Login.css";
 
 function Login() {
   const { t } = useTranslation("auth");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { colorScheme } = useMantineColorScheme();
-  const theme = useMantineTheme();
   const [error, setError] = useState("");
-
-  // Use white logo for dark theme, black for light theme
-  const logoPath =
-    colorScheme === "dark" ? "/logo_white.png" : "/logo_black.png";
 
   const form = useForm({
     initialValues: {
@@ -50,8 +45,8 @@ function Login() {
         !value
           ? t("passwordRequired") || "Password is required"
           : value.length < 3
-          ? t("passwordLength") || "Password must be at least 3 characters"
-          : null,
+            ? t("passwordLength") || "Password must be at least 3 characters"
+            : null,
     },
   });
 
@@ -59,7 +54,7 @@ function Login() {
     setIsLoading(true);
     setError("");
     form.clearErrors();
-    
+
     try {
       const user = await login(values.username, values.password);
       if (user) {
@@ -67,51 +62,7 @@ function Login() {
       }
     } catch (error) {
       console.error("Login page: Login failed", error);
-      
-      let errorMessage = t("loginError", "Invalid username or password. Please try again.");
-      
-      if (error.response) {
-        // Server responded with an error status code
-        const responseData = error.response.data || {};
-        
-        if (responseData.detail) {
-          // If there's a detail message from the backend, use it
-          errorMessage = responseData.detail;
-          
-          // Check for username or password errors in the message
-          const errorLower = errorMessage.toLowerCase();
-          if (errorLower.includes('username') || errorLower.includes('benutzername') || errorLower.includes('user')) {
-            form.setFieldError('username', errorMessage);
-          } else if (errorLower.includes('password') || errorLower.includes('passwort')) {
-            form.setFieldError('password', errorMessage);
-          }
-        } else if (error.response.status === 400) {
-          // For 400 errors, try to get the first error message if available
-          errorMessage = responseData.detail || 
-                        (responseData.message && typeof responseData.message === 'string' ? responseData.message : 
-                        t("loginError", "Invalid username or password. Please try again."));
-          
-          // Set a general field error if we can't determine the specific field
-          if (!form.isValid()) {
-            form.setFieldError('username', ' ');
-            form.setFieldError('password', ' ');
-          }
-        } else if (error.response.status === 401) {
-          // For 401 Unauthorized (invalid credentials)
-          errorMessage = t("invalidCredentials", "Invalid username or password.");
-          form.setFieldError('username', ' ');
-          form.setFieldError('password', ' ');
-        } else {
-          // For other error status codes
-          errorMessage = responseData.detail || 
-                        (responseData.message && typeof responseData.message === 'string' ? responseData.message : 
-                        t("loginFailed", "An error occurred during login. Please try again later."));
-        }
-      } else if (error.request) {
-        // The request was made but no response was received
-        errorMessage = t("networkError", "Network error. Please check your connection and try again.");
-      }
-      
+      let errorMessage = t("loginError", "Invalid username or password.");
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -122,90 +73,195 @@ function Login() {
     authService.redirectToGoogleOAuth();
   };
 
-  // GitHub and Discord login handlers removed from UI but kept in code for future use
-
   return (
-    <Container align="center" size={460} my={40}>
-      <Group position="center"  align="center" spacing="xs" mb={20}>
-        <Image src={logoPath} width={80} mb="md" alt="LearnWeave Logo" />
-        <Stack spacing="xxs">
-          <Title order={1} size={32} weight={700} align="center">
-            {t("welcomeBack")}
-          </Title>
-          <Text color="dimmed" size="lg" align="center" mb="xl">
-            {t("signInToContinue")}
-          </Text>
-        </Stack>
-      </Group>
+    <div className="login-container">
+      {/* Left Side - Form */}
+      <div className="login-left">
+        <div className="login-form-wrapper">
+          {/* Back Button */}
+          <Button
+            variant="subtle"
+            color="gray"
+            leftIcon={<IconChevronDown size={16} style={{ transform: 'rotate(90deg)' }} />}
+            onClick={() => navigate('/')}
+            mb="md"
+            styles={{
+              root: {
+                padding: '4px 12px',
+                height: 'auto',
+                fontWeight: 600,
+                color: '#6b7280',
+                '&:hover': {
+                  backgroundColor: '#f3f4f6',
+                }
+              }
+            }}
+          >
+            Back to Home
+          </Button>
 
-      <Paper withBorder p={30} radius="md">
-        {error && (
-          <Text color="red" size="sm" mb="md">
-            {error}
-          </Text>
-        )}
-        <Button
-          leftIcon={<IconBrandGoogleFilled size={20} />}
-          variant="default"
-          fullWidth
-          size="md"
-          onClick={handleGoogleLogin}
-          mb="xl"
-          style={{ height: 46 }}
-        >
-          {t("continueWithGoogle")}
-        </Button>
+          <Group position="apart" mb={40}>
+            <Text className="header-logo">LearnWeave</Text>
+            <UnstyledButton>
+              <Group spacing={4}>
+                <Image src="https://flagcdn.com/w20/gb.png" width={16} />
+                <Text size="xs" weight={600}>
+                  EN
+                </Text>
+                <IconChevronDown size={14} />
+              </Group>
+            </UnstyledButton>
+          </Group>
 
-        <Divider
-          label={
-            <Text size="sm" color="dimmed">
-              {t("orContinueWithEmail")}
+          <Box mb={32}>
+            <Text size={32} weight={800} mb={4}>
+              Welcome Back
             </Text>
-          }
-          labelPosition="center"
-          my="lg"
-        />
+            <Text color="dimmed" size="sm">
+              Sign in to continue to your dashboard
+            </Text>
+          </Box>
 
-        <form onSubmit={form.onSubmit(handleSubmit)}>
-          <Stack spacing="md">
-            <TextInput
-              label={t("username")}
-              placeholder={t("usernamePlaceholder")}
-              required
-              size="md"
-              {...form.getInputProps("username")}
-            />
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            <Stack spacing="md">
+              <TextInput
+                label="Email or Username"
+                placeholder="Enter your email or username"
+                required
+                size="md"
+                styles={{
+                  label: { marginBottom: 8, fontWeight: 500 },
+                  input: { borderRadius: 8, height: 48 },
+                }}
+                {...form.getInputProps("username")}
+              />
 
-            <PasswordInput
-              label={t("password")}
-              placeholder={t("passwordPlaceholder")}
-              required
-              size="md"
-              {...form.getInputProps("password")}
-            />
+              <Box>
+                <PasswordInput
+                  label="Password"
+                  placeholder="Enter your password"
+                  required
+                  size="md"
+                  styles={{
+                    label: { marginBottom: 8, fontWeight: 500 },
+                    input: { borderRadius: 8, height: 48 },
+                  }}
+                  {...form.getInputProps("password")}
+                />
+                <Anchor
+                  component={Link}
+                  to="/forgot-password"
+                  size="xs"
+                  align="right"
+                  display="block"
+                  mt={8}
+                  color="red"
+                >
+                  Forgot password?
+                </Anchor>
+              </Box>
 
-            <Button
-              fullWidth
-              type="submit"
-              size="md"
-              loading={isLoading}
-              style={{ height: 46 }}
-              variant="gradient"
-              gradient={{ from: 'cyan', to: 'teal' }}
-            >
-              {t("signIn")}
-            </Button>
-          </Stack>
-        </form>
+              {error && (
+                <Text color="red" size="xs" weight={500}>
+                  {error}
+                </Text>
+              )}
 
-        <Text align="center" mt="lg">
-          {t("noAccount")}{" "}
-          <Anchor component={Link} to="/auth/signup" weight={600}>
-            {t("signUp")}
-          </Anchor>
-        </Text>
-      </Paper>
-    </Container>
+              <Button
+                fullWidth
+                type="submit"
+                size="md"
+                loading={isLoading}
+                className="login-submit-btn"
+              >
+                Sign In
+              </Button>
+
+              <Divider label="or" labelPosition="center" my="sm" color="gray.2" />
+
+              <Button
+                leftIcon={<IconBrandGoogleFilled size={18} color="#4285F4" />}
+                variant="outline"
+                fullWidth
+                size="md"
+                onClick={handleGoogleLogin}
+                className="google-login-btn"
+              >
+                Sign in with Google
+              </Button>
+            </Stack>
+          </form>
+
+          <Text align="center" mt="xl" size="sm" className="login-footer-text">
+            Don't have an account?{" "}
+            <Link to="/auth/signup" className="sign-up-link">
+              Sign up
+            </Link>
+          </Text>
+        </div>
+      </div>
+
+      {/* Right Side - Visual/Marketing */}
+      <div className="login-right">
+        <div className="login-visual-content">
+          <h1 className="login-visual-title">
+            Welcome Back to LearnWeave
+          </h1>
+          <p className="login-visual-subtitle">
+            Continue your learning journey with AI-powered education tools designed to help you succeed.
+          </p>
+
+          <div className="feature-list">
+            <div className="feature-item">
+              <div className="feature-icon">
+                <IconRocket size={24} />
+              </div>
+              <div className="feature-text">
+                <h4>Pick Up Where You Left Off</h4>
+                <p>Access your courses and continue learning instantly</p>
+              </div>
+            </div>
+
+            <div className="feature-item">
+              <div className="feature-icon">
+                <IconSparkles size={24} />
+              </div>
+              <div className="feature-text">
+                <h4>Personalized Learning</h4>
+                <p>AI adapts to your pace and learning style</p>
+              </div>
+            </div>
+
+            <div className="feature-item">
+              <div className="feature-icon">
+                <IconShieldCheck size={24} />
+              </div>
+              <div className="feature-text">
+                <h4>Track Your Progress</h4>
+                <p>Monitor achievements and stay motivated</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="social-proof">
+            <div className="social-proof-stats">
+              <div className="stat-item">
+                <span className="stat-value">10k+</span>
+                <span className="stat-label">Active Users</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-value">99%</span>
+                <span className="stat-label">Satisfaction</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-value">24/7</span>
+                <span className="stat-label">Support</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

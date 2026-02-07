@@ -1,50 +1,46 @@
 import { useState, forwardRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Title, 
-  Text, 
-  Paper, 
-  Stepper, 
-  Button, 
-  Group, 
-  TextInput, 
-  Textarea, 
-  Select, 
-  NumberInput, 
-  Box, 
-  FileInput, 
-  Image, 
-  List, 
-  ThemeIcon, 
-  Progress, 
-  Stack, 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Container,
+  Title,
+  Text,
+  Paper,
+  Stepper,
+  Button,
+  Group,
+  TextInput,
+  Textarea,
+  Select,
+  Box,
+  Image,
+  List,
+  ThemeIcon,
+  Progress,
+  Stack,
   useMantineTheme,
-  LoadingOverlay,
-  Center,
   RingProgress,
   Divider,
   Alert,
-  Modal,
-  Anchor,
   SimpleGrid,
   FileButton,
   Card,
   Slider,
   ActionIcon,
-
+  Center,
+  Loader,
 } from '@mantine/core';
-import { 
-  IconBook, 
-  IconClock, 
-  IconGlobe, 
-  IconBrain, 
-  IconUpload, 
-  IconFile, 
-  IconPhoto, 
-  IconCheck, 
-  IconArrowRight, 
+import {
+  IconBook,
+  IconClock,
+  IconGlobe,
+  IconBrain,
+  IconUpload,
+  IconFile,
+  IconPhoto,
+  IconCheck,
+  IconArrowRight,
   IconArrowLeft,
   IconSparkles,
   IconTarget,
@@ -57,9 +53,10 @@ import {
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { toast } from 'react-toastify';
-import { courseService } from '../api/courseService';
+import courseService from '../api/courseService';
 import ReactCountryFlag from 'react-country-flag';
 import PremiumModal from '../components/PremiumModal';
+import './CreateCourse.css';
 
 const LanguageSelectItem = forwardRef(({ label, countryCode, ...others }, ref) => (
   <div ref={ref} {...others}>
@@ -75,13 +72,11 @@ const LanguageSelectItem = forwardRef(({ label, countryCode, ...others }, ref) =
   </div>
 ));
 
-
-
 function CreateCourse() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('createCourse');
   const theme = useMantineTheme();
-  
+
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -95,8 +90,8 @@ function CreateCourse() {
     initialValues: {
       query: '',
       time_hours: 2,
-      language: i18n.language,
-      difficulty: '',
+      language: i18n.language || 'en',
+      difficulty: 'beginner',
       documents: [],
       images: [],
     },
@@ -108,41 +103,22 @@ function CreateCourse() {
   });
 
   const steps = [
-    { 
-      label: t('stepper.details.label') || 'Learning Goal', 
-      description: t('stepper.details.description') || 'What do you want to learn?',
-      icon: <IconBrain size={20} />,
-      color: 'teal'
-    },
-    { 
-      label: t('stepper.uploads.label') || 'Time Investment', 
-      description: 'How much time to invest?',
-      icon: <IconClock size={20} />,
-      color: 'blue'
-    },
-    { 
-      label: t('stepper.review.label') || 'Course Settings', 
-      description: 'Difficulty and language',
-      icon: <IconTarget size={20} />,
-      color: 'cyan'
-    },
-    { 
-      label: 'Review & Create', 
-      description: 'Confirm your choices',
-      icon: <IconCheck size={20} />,
-      color: 'green'
-    }
+    { label: 'Goal', description: 'What to learn', icon: <IconBrain size={20} /> },
+    { label: 'Duration', description: 'Study time', icon: <IconClock size={20} /> },
+    { label: 'Settings', description: 'Level & Language', icon: <IconTarget size={20} /> },
+    { label: 'Review', description: 'Confirm', icon: <IconCheck size={20} /> }
   ];
 
   const difficultyOptions = [
-    { value: 'beginner', label: t('form.difficulty.options.beginner') || 'Beginner', description: 'New to this topic', icon: IconBook },
-    { value: 'intermediate', label: t('form.difficulty.options.intermediate') || 'Intermediate', description: 'Some knowledge', icon: IconBrain },
-    { value: 'advanced', label: t('form.difficulty.options.advanced') || 'Advanced', description: 'Experienced learner', icon: IconSparkles },
-    { value: 'university', label: t('form.difficulty.options.university') || 'University', description: 'University level', icon: IconSchool }
+    { value: 'beginner', label: 'Beginner', description: 'New to this topic', icon: IconBook },
+    { value: 'intermediate', label: 'Intermediate', description: 'Some knowledge', icon: IconBrain },
+    { value: 'advanced', label: 'Advanced', description: 'Experienced learner', icon: IconSparkles },
+    { value: 'university', label: 'University', description: 'Academic level', icon: IconSchool }
   ];
 
   const languageOptions = [
-    { value: 'en', label: t('form.language.options.english') || 'English', countryCode: 'US' },
+    { value: 'en', label: 'English', countryCode: 'US' },
+    { value: 'de', label: 'Deutsch', countryCode: 'DE' },
   ];
 
   const handleDocumentUpload = async (file) => {
@@ -151,11 +127,10 @@ function CreateCourse() {
     try {
       const documentData = await courseService.uploadDocument(file);
       setUploadedDocuments(prev => [...prev, documentData]);
-      toast.success(t('toast.documentUploadSuccess', { fileName: file.name }));
+      toast.success(`Uploaded ${file.name}`);
       return documentData;
     } catch (err) {
-      console.error('Error uploading document:', err);
-      toast.error(t('toast.documentUploadError', { error: err.message || t('errors.unknown') }));
+      toast.error(`Upload failed: ${err.message}`);
       return null;
     } finally {
       setIsUploading(false);
@@ -168,11 +143,10 @@ function CreateCourse() {
     try {
       const imageData = await courseService.uploadImage(file);
       setUploadedImages(prev => [...prev, imageData]);
-      toast.success(t('toast.imageUploadSuccess', { fileName: file.name }));
+      toast.success(`Uploaded ${file.name}`);
       return imageData;
     } catch (err) {
-      console.error('Error uploading image:', err);
-      toast.error(t('toast.imageUploadError', { error: err.message || t('errors.unknown') }));
+      toast.error(`Upload failed: ${err.message}`);
       return null;
     } finally {
       setIsUploading(false);
@@ -180,48 +154,30 @@ function CreateCourse() {
   };
 
   const nextStep = () => {
-    console.log('Next step clicked, current step:', activeStep, 'isValid:', isStepValid(activeStep), 'query length:', form.values.query.trim().length);
-    if (activeStep < steps.length - 1) {
-      setActiveStep(prev => prev + 1);
-    }
+    if (activeStep < steps.length - 1) setActiveStep(prev => prev + 1);
   };
 
   const prevStep = () => {
-    if (activeStep > 0) {
-      setActiveStep(prev => prev - 1);
-    }
+    if (activeStep > 0) setActiveStep(prev => prev - 1);
   };
 
   const handleFileUpload = async (files, type) => {
     if (files && files.length > 0) {
       for (const file of files) {
-        if (type === 'document') {
-          await handleDocumentUpload(file);
-        } else {
-          await handleImageUpload(file);
-        }
+        if (type === 'document') await handleDocumentUpload(file);
+        else await handleImageUpload(file);
       }
-      form.setFieldValue(type === 'document' ? 'documents' : 'images', 
-        [...form.values[type === 'document' ? 'documents' : 'images'], ...files]);
     }
   };
 
   const removeFile = (index, type) => {
-    if (type === 'document') {
-      setUploadedDocuments(prev => prev.filter((_, i) => i !== index));
-    } else {
-      setUploadedImages(prev => prev.filter((_, i) => i !== index));
-    }
+    if (type === 'document') setUploadedDocuments(prev => prev.filter((_, i) => i !== index));
+    else setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
-    if (form.validate().hasErrors) {
-      return;
-    }
-
     setIsSubmitting(true);
     setError(null);
-
     try {
       const documentIds = uploadedDocuments.map(doc => doc.id);
       const imageIds = uploadedImages.map(img => img.id);
@@ -235,701 +191,348 @@ function CreateCourse() {
         picture_ids: imageIds,
       });
 
-      console.log('Course creation initiated:', data);
       navigate(`/dashboard/courses/${data.course_id}`);
-      
-    } catch (err) { 
-      console.error('Error initiating course creation:', err);
-      // Handle specific error cases
-      
+    } catch (err) {
       if (err.response?.status === 429) {
-        // Handle rate limiting or course limit errors
-        const errorData = err.response?.data?.detail || {};
-        console.log('Error data:', errorData);
-        
-        if (errorData.code === 'MAX_COURSE_CREATIONS_REACHED' || 
-            errorData.code === 'MAX_PRESENT_COURSES_REACHED') {
-          const errorMessage = t(`errors.${errorData.code === 'MAX_COURSE_CREATIONS_REACHED' ? 'maxCoursesCreated' : 'maxActiveCourses'}`, { limit: errorData.limit });
-          console.log('Showing premium modal for error:', errorMessage);
-          
-          // Set limit reached state and show premium modal
-          setIsLimitReached(true);
-          setShowPremiumModal(true);
-          console.log('showPremiumModal set to:', true, 'with limitReached: true');
-          
-          // Use setTimeout to ensure state update is processed
-          setTimeout(() => {
-            toast.error(errorMessage, {
-              autoClose: 5000,
-              onClose: () => {
-                console.log('Toast closed');
-                setIsSubmitting(false);
-              }
-            });
-          }, 100);
-          return;
-        }
+        setIsLimitReached(true);
+        setShowPremiumModal(true);
       }
-      // Default error handling
-      const errorMessage = err.response?.data?.message || err.response?.data?.detail || err.message || t('errors.unknown');
-      setError(errorMessage);
-      toast.error(errorMessage, {
-        onClose: () => setIsSubmitting(false) // Reset loading state when toast is closed
-      });
+      setError(err.message || 'Creation failed');
+      toast.error(err.message || 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
 
   const isStepValid = (step) => {
     switch (step) {
       case 0: return form.values.query.trim().length > 0;
       case 1: return form.values.time_hours > 0;
       case 2: return form.values.difficulty && form.values.language;
-      case 3: return true;
-      default: return false;
+      default: return true;
     }
   };
 
-  // Step Content Components
   const renderStepContent = () => {
+    const stepTransition = {
+      initial: { opacity: 0, x: 20 },
+      animate: { opacity: 1, x: 0 },
+      exit: { opacity: 0, x: -20 },
+      transition: { duration: 0.4 }
+    };
+
     switch (activeStep) {
       case 0:
         return (
-          <Stack spacing="lg">
-            <Box ta="center" mb="sm">
-              <ThemeIcon 
-                size={60} 
-                radius="xl" 
-                variant="gradient"
-                gradient={{ from: 'teal', to: 'cyan' }}
-                mb="sm"
-              >
-                <img 
-                  src="/logo_white_mittig.png"
-                  alt="Logo"
-                  style={{ 
-                    height: 28,
-                    width: 'auto',
-                    filter: 'drop-shadow(0 2px 4px rgba(139, 92, 246, 0.3))',
-                  }}></img>
-              </ThemeIcon>
-              <Title order={3} mb="xs">{t('form.topic.label') || 'What would you like to learn?'}</Title>
-              <Text color="dimmed" size="md">
-                {t('form.topic.placeholder') || 'Describe your learning goal and upload any relevant materials'}
-              </Text>
-            </Box>
-
-            <Textarea
-              placeholder={t('form.topic.placeholder') || "I want to learn about React hooks and how to build modern web applications with functional components..."}
-              required
-              autosize
-              minRows={3}
-              maxRows={4}
-              {...form.getInputProps('query')}
-              styles={{
-                input: {
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  padding: '12px 16px',
-                  borderRadius: 8,
-                  border: `2px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-                  '&:focus': {
-                    borderColor: theme.colors.teal[6],
-                    boxShadow: `0 0 0 3px ${theme.colors.teal[6]}20`
-                  }
-                }
-              }}
-            />
-
-            <Divider label={t('form.uploads.description') || "Optional: Add Learning Materials"} labelPosition="center" />
-
-            <SimpleGrid cols={2} spacing="md">
-              <FileButton
-                onChange={(files) => handleFileUpload(files, 'document')}
-                accept=".pdf,.doc,.docx,.txt"
-                multiple
-                disabled={isUploading || isSubmitting}
-              >
-                {(props) => (
-                  <Card 
-                    {...props}
-                    p="md"
-                    withBorder
-                    sx={{
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      opacity: isUploading ? 0.6 : 1,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: theme.shadows.md
-                      }
-                    }}
-                  >
-                    <Stack align="center" spacing="xs">
-                      <ThemeIcon size={40} color="blue" variant="light" radius="xl">
-                        <IconFile size={20} />
-                      </ThemeIcon>
-                      <Text weight={600} size="xs">{t('form.documents.label') || 'Upload Documents'}</Text>
-                      <Text size="xs" color="dimmed" ta="center">
-                        PDF, DOC, TXT files
-                      </Text>
-                    </Stack>
-                  </Card>
-                )}
-              </FileButton>
-
-              <FileButton
-                onChange={(files) => handleFileUpload(files, 'image')}
-                accept="image/*"
-                multiple
-                disabled={isUploading || isSubmitting}
-              >
-                {(props) => (
-                  <Card 
-                    {...props}
-                    p="md"
-                    withBorder
-                    sx={{
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      opacity: isUploading ? 0.6 : 1,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: theme.shadows.md
-                      }
-                    }}
-                  >
-                    <Stack align="center" spacing="xs">
-                      <ThemeIcon size={40} color="teal" variant="light" radius="xl">
-                        <IconPhoto size={20} />
-                      </ThemeIcon>
-                      <Text weight={600} size="xs">{t('form.images.label') || 'Upload Images'}</Text>
-                      <Text size="xs" color="dimmed" ta="center">
-                        PNG, JPG, GIF files
-                      </Text>
-                    </Stack>
-                  </Card>
-                )}
-              </FileButton>
-            </SimpleGrid>
-
-            {(uploadedDocuments.length > 0 || uploadedImages.length > 0) && (
-              <Box>
-                <Text weight={600} mb="sm">
-                  {t('form.documents.uploadedTitle') || 'Uploaded Files'} ({uploadedDocuments.length + uploadedImages.length})
-                </Text>
-                <Group grow>
-                  {uploadedDocuments.length > 0 && (
-                    <div>
-                     {/* <Text size="sm" weight={500} mb="xs">{t('form.documents.uploadedTitle') || 'Documents'}</Text> */}
-                      <List size="sm" spacing="xs">
-                        {uploadedDocuments.map((doc, index) => (
-                          <List.Item key={doc.id} icon={<IconFileText size={14} />}>
-                            <Group position="apart">
-                              <Text size="xs" truncate>{doc.filename}</Text>
-                              <ActionIcon
-                                size="xs"
-                                color="red"
-                                variant="subtle"
-                                onClick={() => removeFile(index, 'document')}
-                              >
-                                <IconX size={10} />
-                              </ActionIcon>
-                            </Group>
-                          </List.Item>
-                        ))}
-                      </List>
-                    </div>
-                  )}
-                  {uploadedImages.length > 0 && (
-                    <div>
-                      {/* <Text size="sm" weight={500} mb="xs">{t('form.images.uploadedTitle') || 'Images'}</Text> */}
-                      <List size="sm" spacing="xs">
-                        {uploadedImages.map((img, index) => (
-                          <List.Item key={img.id} icon={<IconPhoto size={14} />}>
-                            <Group position="apart">
-                              <Text size="xs" truncate>{img.filename || img.name || 'Image'}</Text>
-                              <ActionIcon
-                                size="xs"
-                                color="red"
-                                variant="subtle"
-                                onClick={() => removeFile(index, 'image')}
-                              >
-                                <IconX size={10} />
-                              </ActionIcon>
-                            </Group>
-                          </List.Item>
-                        ))}
-                      </List>
-                    </div>
-                  )}
-                </Group>
+          <motion.div key="step0" {...stepTransition}>
+            <Stack spacing="xl">
+              <Box ta="center">
+                <ThemeIcon size={80} radius="24px" variant="gradient" gradient={{ from: 'teal', to: 'cyan' }} mb="md">
+                  <IconBrain size={40} />
+                </ThemeIcon>
+                <Title order={2} weight={900}>What's your learning goal?</Title>
+                <Text color="dimmed" mt="xs">Describe the topic you want to master in detail.</Text>
               </Box>
-            )}
 
-            {isUploading && (
-              <Alert 
-                icon={<IconUpload size={16} />}
-                title={t('alert.uploading.title') || 'Uploading files...'} 
-                color="blue"
-              >
-                {t('alert.uploading.message') || 'Please wait while your files are being uploaded.'}
-              </Alert>
-            )}
-          </Stack>
+              <Textarea
+                placeholder="e.g., I want a comprehensive course on Quantum Computing, focusing on qubits, entanglement, and Shor's algorithm for beginners."
+                required
+                autosize
+                minRows={4}
+                {...form.getInputProps('query')}
+                className="premium-textarea"
+              />
+
+              <Divider label="Support with Materials" labelPosition="center" />
+
+              <SimpleGrid cols={2} spacing="md">
+                <FileButton onChange={(files) => handleFileUpload(files, 'document')} accept=".pdf,.doc,.docx,.txt" multiple>
+                  {(props) => (
+                    <Paper {...props} withBorder className="difficulty-card-premium" ta="center">
+                      <ThemeIcon size={48} color="blue" variant="light" radius="xl" mb="sm">
+                        <IconFileText size={24} />
+                      </ThemeIcon>
+                      <Text weight={700} size="sm">Add Documents</Text>
+                      <Text size="xs" color="dimmed">PDF, Word, TXT</Text>
+                    </Paper>
+                  )}
+                </FileButton>
+                <FileButton onChange={(files) => handleFileUpload(files, 'image')} accept="image/*" multiple>
+                  {(props) => (
+                    <Paper {...props} withBorder className="difficulty-card-premium" ta="center">
+                      <ThemeIcon size={48} color="teal" variant="light" radius="xl" mb="sm">
+                        <IconPhoto size={24} />
+                      </ThemeIcon>
+                      <Text weight={700} size="sm">Add Images</Text>
+                      <Text size="xs" color="dimmed">PNG, JPG, SVG</Text>
+                    </Paper>
+                  )}
+                </FileButton>
+              </SimpleGrid>
+
+              {(uploadedDocuments.length > 0 || uploadedImages.length > 0) && (
+                <Stack spacing="xs">
+                  <Text weight={800} size="sm" color="dimmed">ATTACHED FILES</Text>
+                  <Group spacing="sm">
+                    {uploadedDocuments.map((doc, i) => (
+                      <Badge key={doc.id} variant="light" color="blue" size="lg" radius="md" rightSection={<ActionIcon size="xs" onClick={() => removeFile(i, 'document')}><IconX size={10} /></ActionIcon>}>
+                        {doc.filename}
+                      </Badge>
+                    ))}
+                    {uploadedImages.map((img, i) => (
+                      <Badge key={img.id} variant="light" color="teal" size="lg" radius="md" rightSection={<ActionIcon size="xs" onClick={() => removeFile(i, 'image')}><IconX size={10} /></ActionIcon>}>
+                        {img.filename || 'Image'}
+                      </Badge>
+                    ))}
+                  </Group>
+                </Stack>
+              )}
+            </Stack>
+          </motion.div>
         );
 
       case 1:
         return (
-          <Stack spacing="">
-            <Box ta="center" mb="sm">
-              <ThemeIcon 
-                size={60} 
-                radius="xl" 
-                variant="gradient"
-                gradient={{ from: 'blue', to: 'teal' }}
-                mb="sm"
-              >
-                <IconClock size={30} />
-              </ThemeIcon>
-              <Title order={3} mb="xs">{t('form.duration.label') || 'Time Investment'}</Title>
-              <Text color="dimmed" size="md">
-                {t('form.duration.description') || 'How many hours do you want to dedicate to this course?'}
-              </Text>
-            </Box>
+          <motion.div key="step1" {...stepTransition}>
+            <Stack spacing="xl">
+              <Box ta="center">
+                <ThemeIcon size={80} radius="24px" variant="gradient" gradient={{ from: 'blue', to: 'teal' }} mb="md">
+                  <IconClock size={40} />
+                </ThemeIcon>
+                <Title order={2} weight={900}>Study Duration</Title>
+                <Text color="dimmed" mt="xs">How many hours can you dedicate to this course?</Text>
+              </Box>
 
-            <Card p="lg" withBorder radius="lg" bg={theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0]}>
-              <Center mb="lg">
+              <Center>
                 <RingProgress
-                  size={160}
-                  thickness={10}
+                  size={200}
+                  thickness={12}
                   roundCaps
-                  sections={[{ 
-                    value: (form.values.time_hours / 30) * 100, 
-                    color: theme.colors.blue[6] 
-                  }]}
+                  sections={[{ value: (form.values.time_hours / 30) * 100, color: '#0d9488' }]}
                   label={
-                    <Stack align="center" spacing={2}>
-                      <Text size="lg" weight={700} color={theme.colors.blue[6]}>
-                        {form.values.time_hours}
-                      </Text>
-                      <Text size="xs" color="dimmed">{form.values.time_hours === 1 ? 'hour' : 'hours'}</Text>
+                    <Stack align="center" spacing={0}>
+                      <Text size={32} weight={900} color="#0d9488">{form.values.time_hours}</Text>
+                      <Text weight={800} size="sm" color="dimmed">HOURS</Text>
                     </Stack>
                   }
                 />
               </Center>
 
-              <Slider
-                value={form.values.time_hours}
-                onChange={(value) => form.setFieldValue('time_hours', value)}
-                min={1}
-                max={30}
-                step={1}
-                size="lg"
-                radius="xl"
-                color="blue"
-                marks={[
-                  { value: 5, label: '5h' },
-                  { value: 10, label: '10h' },
-                  { value: 15, label: '15h' },
-                  { value: 20, label: '20h' },
-                  { value: 25, label: '25h' },
-                  { value: 30, label: '30h'},
-                ]}
-                styles={{
-                  track: { height: 8 },
-                  thumb: { 
-                    width: 24, 
-                    height: 24,
-                    border: `3px solid ${theme.colors.blue[6]}`,
-                    backgroundColor: theme.white
-                  }
-                }}
-              />
+              <Box px="xl">
+                <Slider
+                  value={form.values.time_hours}
+                  onChange={(v) => form.setFieldValue('time_hours', v)}
+                  min={1}
+                  max={30}
+                  size="xl"
+                  radius="xl"
+                  color="teal"
+                  marks={[
+                    { value: 5, label: '5h' },
+                    { value: 15, label: '15h' },
+                    { value: 30, label: '30h' },
+                  ]}
+                />
+              </Box>
 
-              <SimpleGrid cols={3} spacing="md" mt="lg">
-                <Card p="sm" withBorder radius="md" ta="center">
-                  <Text size="xs" color="dimmed" weight={600} transform="uppercase">Quick</Text>
-                  <Text size="md" weight={700}>1-5 hours</Text>
-                  <Text size="xs" color="dimmed">Quick Refresher</Text>
-                </Card>
-                <Card p="sm" withBorder radius="md" ta="center">
-                  <Text size="xs" color="dimmed" weight={600} transform="uppercase">Deep Dive</Text>
-                  <Text size="md" weight={700}>5-20 hours</Text>
-                  <Text size="xs" color="dimmed">Deep Dive into a Complex Topic</Text>
-                </Card>
-                <Card p="sm" withBorder radius="md" ta="center">
-                  <Text size="xs" color="dimmed" weight={600} transform="uppercase">Mastery</Text>
-                  <Text size="md" weight={700}>20+ hours</Text>
-                  <Text size="xs" color="dimmed">University Level Mastering of the Topic</Text>
-                </Card>
+              <SimpleGrid cols={3} spacing="md" mt="xl">
+                {[
+                  { label: 'Sprint', hours: '1-5h', desc: 'Focus sessions' },
+                  { label: 'Deep Dive', hours: '5-20h', desc: 'Detailed study' },
+                  { label: 'Mastery', hours: '20-30h', desc: 'Full mastery' }
+                ].map((p, i) => (
+                  <Paper key={i} p="md" withBorder radius="lg" ta="center">
+                    <Text weight={900} color="#0d9488">{p.label}</Text>
+                    <Text size="sm" weight={700}>{p.hours}</Text>
+                    <Text size="xs" color="dimmed">{p.desc}</Text>
+                  </Paper>
+                ))}
               </SimpleGrid>
-            </Card>
-          </Stack>
+            </Stack>
+          </motion.div>
         );
 
       case 2:
         return (
-          <Stack spacing="lg">
-            <Box ta="center" mb="sm">
-              <Title order={3} mb="xs">{t('form.difficulty.label') || 'Course Settings'}</Title>
-              <Text color="dimmed" size="md">
-                Choose your difficulty level and preferred language
-              </Text>
-            </Box>
+          <motion.div key="step2" {...stepTransition}>
+            <Stack spacing="xl">
+              <Box ta="center">
+                <ThemeIcon size={80} radius="24px" variant="gradient" gradient={{ from: 'cyan', to: 'teal' }} mb="md">
+                  <IconTarget size={40} />
+                </ThemeIcon>
+                <Title order={2} weight={900}>Personalize your Level</Title>
+                <Text color="dimmed" mt="xs">Choose your current expertise and preferred language.</Text>
+              </Box>
 
-            <Box>
-              <Text weight={600} mb="md">{t('form.difficulty.label') || 'Difficulty Level'}</Text>
-              <SimpleGrid cols={1} spacing="sm">
-                {difficultyOptions.map((option) => {
-                  const Icon = option.icon;
+              <SimpleGrid cols={2} spacing="md">
+                {difficultyOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const isSelected = form.values.difficulty === opt.value;
                   return (
-                    <Card
-                      key={option.value}
-                      p="md"
+                    <Paper
+                      key={opt.value}
                       withBorder
-                      radius="md"
-                      sx={{
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        backgroundColor: form.values.difficulty === option.value 
-                          ? (theme.colorScheme === 'dark' ? theme.colors.teal[9] : theme.colors.teal[0])
-                          : 'transparent',
-                        borderColor: form.values.difficulty === option.value 
-                          ? theme.colors.teal[6] 
-                          : (theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]),
-                        '&:hover': {
-                          borderColor: theme.colors.teal[6],
-                          transform: 'translateY(-1px)'
-                        }
-                      }}
-                      onClick={() => form.setFieldValue('difficulty', option.value)}
+                      className="difficulty-card-premium"
+                      data-selected={isSelected}
+                      onClick={() => form.setFieldValue('difficulty', opt.value)}
                     >
-                      <Group position="apart">
-                        <Group noWrap>
-                          <ThemeIcon variant="light" size="lg" color={form.values.difficulty === option.value ? 'teal' : 'gray'}>
-                            <Icon size={20} />
-                          </ThemeIcon>
-                          <div>
-                            <Text weight={600} size="sm">{option.label}</Text>
-                            <Text size="xs" color="dimmed">{option.description}</Text>
-                          </div>
-                        </Group>
-                        {form.values.difficulty === option.value && (
-                          <ThemeIcon color="teal" variant="filled" radius="xl" size="sm">
-                            <IconCheck size={14} />
-                          </ThemeIcon>
-                        )}
+                      <Group noWrap>
+                        <ThemeIcon color={isSelected ? 'teal' : 'gray'} variant="light" size="lg" radius="md">
+                          <Icon size={20} />
+                        </ThemeIcon>
+                        <Box>
+                          <Text weight={800} size="sm">{opt.label}</Text>
+                          <Text size="xs" color="dimmed">{opt.description}</Text>
+                        </Box>
                       </Group>
-                    </Card>
+                    </Paper>
                   );
                 })}
               </SimpleGrid>
-            </Box>
 
-            <Box>
-              <Text weight={600} mb="md">{t('form.language.label') || 'Course Language'}</Text>
-              {(() => {
-                const selectedLanguage = languageOptions.find(lang => lang.value === form.values.language);
-
-                return (
-                  <Select
-                    placeholder={t('form.language.placeholder')}
-                    icon={selectedLanguage ? <ReactCountryFlag countryCode={selectedLanguage.countryCode} svg style={{ width: '1.2em', height: '1.2em' }} /> : <IconGlobe size={16} />}
-                    itemComponent={LanguageSelectItem}
-                    data={languageOptions}
-                    {...form.getInputProps('language')}
-                    size="md"
-                  />
-                );
-              })()}
-            </Box>
-          </Stack>
+              <Box>
+                <Text weight={800} size="sm" color="dimmed" mb="xs">PREFFERED LANGUAGE</Text>
+                <Select
+                  data={languageOptions}
+                  itemComponent={LanguageSelectItem}
+                  {...form.getInputProps('language')}
+                  size="lg"
+                  radius="xl"
+                  icon={<IconGlobe size={20} color="#0d9488" />}
+                />
+              </Box>
+            </Stack>
+          </motion.div>
         );
 
-      case 3: {
-        const selectedLanguage = languageOptions.find(o => o.value === form.values.language);
-        const selectedDifficulty = difficultyOptions.find(o => o.value === form.values.difficulty);
-        const DifficultyIcon = selectedDifficulty?.icon;
-
+      case 3:
         return (
-          <Stack spacing="lg">
-            <Box ta="center" mb="sm">
-              <ThemeIcon 
-                size={60} 
-                radius="xl" 
-                variant="gradient"
-                gradient={{ from: 'green', to: 'teal' }}
-                mb="sm"
-              >
-                <IconCheck size={30} />
-              </ThemeIcon>
-              <Title order={3} mb="xs">{t('form.review.title') || 'Review & Create'}</Title>
-              <Text color="dimmed" size="md">
-                {t('form.review.confirmation') || 'Confirm your choices and create your personalized course'}
-              </Text>
-            </Box>
+          <motion.div key="step3" {...stepTransition}>
+            <Stack spacing="xl">
+              <Box ta="center">
+                <ThemeIcon size={80} radius="24px" variant="gradient" gradient={{ from: 'green', to: 'teal' }} mb="md">
+                  <IconRocket size={40} />
+                </ThemeIcon>
+                <Title order={2} weight={900}>Ready to Launch?</Title>
+                <Text color="dimmed" mt="xs">Review your curriculum details before we generate it.</Text>
+              </Box>
 
-            <Card p="lg" withBorder radius="lg" bg={theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0]}>
-              <Stack spacing="md">
-                <Group position="apart">
-                  <Text weight={600} color="dimmed">{t('form.topic.label') || 'Learning Goal'}</Text>
-                  <ActionIcon 
-                    variant="subtle" 
-                    onClick={() => setActiveStep(0)}
-                    title="Edit"
-                  >
-                    <IconEdit size={16} />
-                  </ActionIcon>
-                </Group>
-                <Text sx={{
-                  backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[5] : theme.white,
-                  padding: 12,
-                  borderRadius: 6,
-                  border: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-                  fontSize: 14,
-                  lineHeight: 1.4
-                }}>
-                  {form.values.query || t('form.review.notSet') || "No learning goal specified"}
-                </Text>
+              <div className="summary-card-premium">
+                <Stack spacing="md">
+                  <Group position="apart">
+                    <Text weight={800} color="dimmed" size="xs">TOPIC</Text>
+                    <ActionIcon size="sm" onClick={() => setActiveStep(0)}><IconEdit size={16} /></ActionIcon>
+                  </Group>
+                  <Text weight={700} size="sm">{form.values.query}</Text>
 
-                <Group grow>
-                  <Box>
-                    <Group position="apart" mb="xs">
-                      <Text weight={600} color="dimmed">{t('form.duration.label') || 'Time Investment'}</Text>
-                      <ActionIcon variant="subtle" onClick={() => setActiveStep(1)}>
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Group>
-                    <Group spacing="xs">
-                      <ThemeIcon color="blue" variant="light" size="sm">
-                        <IconClock size={14} />
-                      </ThemeIcon>
-                      <Text weight={600}>{form.values.time_hours} hours</Text>
-                    </Group>
-                  </Box>
+                  <Divider />
 
-                  <Box>
-                    <Group position="apart" mb="xs">
-                      <Text weight={600} color="dimmed">{t('form.difficulty.label') || 'Difficulty'}</Text>
-                      <ActionIcon variant="subtle" onClick={() => setActiveStep(2)}>
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Group>
-                    <Group spacing="xs">
-                      {DifficultyIcon ? (
-                        <ThemeIcon color="cyan" variant="light" size="sm">
-                          <DifficultyIcon size={14} />
-                        </ThemeIcon>
-                      ) : <IconTarget size={14} />}
-                      <Text weight={600} transform="capitalize">
-                        {selectedDifficulty?.label || t('form.review.notSet') || "Not selected"}
-                      </Text>
-                    </Group>
-                  </Box>
-                </Group>
+                  <Group grow>
+                    <Box>
+                      <Text weight={800} color="dimmed" size="xs">DURATION</Text>
+                      <Text weight={700}>{form.values.time_hours} Hours</Text>
+                    </Box>
+                    <Box>
+                      <Text weight={800} color="dimmed" size="xs">DIFFICULTY</Text>
+                      <Text weight={700} transform="capitalize">{form.values.difficulty}</Text>
+                    </Box>
+                    <Box>
+                      <Text weight={800} color="dimmed" size="xs">LANGUAGE</Text>
+                      <Text weight={700}>{languageOptions.find(l => l.value === form.values.language)?.label}</Text>
+                    </Box>
+                  </Group>
+                </Stack>
+              </div>
 
-                <Group grow>
-                  <Box>
-                    <Group position="apart" mb="xs">
-                      <Text weight={600} color="dimmed">{t('form.language.label') || 'Language'}</Text>
-                      <ActionIcon variant="subtle" onClick={() => setActiveStep(2)}>
-                        <IconEdit size={16} />
-                      </ActionIcon>
-                    </Group>
-                    <Group spacing="xs">
-                      {selectedLanguage ? (
-                        <ReactCountryFlag
-                          countryCode={selectedLanguage.countryCode}
-                          svg
-                          style={{ width: '1.2em', height: '1.2em', borderRadius: '2px' }}
-                          title={selectedLanguage.countryCode}
-                        />
-                      ) : (
-                        <ThemeIcon color="teal" variant="light" size="sm">
-                          <IconGlobe size={14} />
-                        </ThemeIcon>
-                      )}
-                      <Text weight={600}>
-                        {selectedLanguage?.label || "English"}
-                      </Text>
-                    </Group>
-                  </Box>
-
-                  <Box>
-                    <Text weight={600} color="dimmed" mb="xs">Materials</Text>
-                    <Group spacing="xs">
-                      <ThemeIcon color="orange" variant="light" size="sm">
-                        <IconUpload size={14} />
-                      </ThemeIcon>
-                      <Text weight={600}>{uploadedDocuments.length + uploadedImages.length} files</Text>
-                    </Group>
-                  </Box>
-                </Group>
-              </Stack>
-            </Card>
-
-            {isSubmitting && (
-              <Card p="lg" withBorder radius="md" ta="center">
-                <Progress value={100} animate color="teal" mb="md" />
-                <Text weight={600} mb="xs">{t('streaming.title') || 'Creating your course...'}</Text>
-                <Text size="sm" color="dimmed">
-                  {t('streaming.description') || 'Our AI is analyzing your requirements and building a personalized learning path'}
-                </Text>
-              </Card>
-            )}
-          </Stack>
+              {isSubmitting && (
+                <Stack align="center" py="md">
+                  <Loader color="teal" variant="dots" size="xl" />
+                  <Text weight={700}>Weaving your personalized course...</Text>
+                </Stack>
+              )}
+            </Stack>
+          </motion.div>
         );
-      }
-
-      default:
-        return null;
+      default: return null;
     }
   };
 
-  if (isSubmitting) {
-    return (
-      <>
-        <PremiumModal 
-          opened={showPremiumModal} 
-          onClose={() => {
-            setShowPremiumModal(false);
-            setIsLimitReached(false);
-          }}
-          limitReached={isLimitReached}
-        />
-        <Container size="lg" py="xl">
-          <Paper shadow="md" p="xl" withBorder>
-            <Title order={3} align="center" mb="md">{t('streaming.title') || 'Creating Your Course'}</Title>
-            <Text align="center" mb="md">{t('streaming.description') || 'Please wait while we generate your personalized course...'}</Text>
-            <Progress value={100} animate color="teal" />
-          </Paper>
-        </Container>
-      </>
-    );
-  }
-
-  // PremiumModal component is now imported and used directly
-
-
   return (
-    <>
-      <PremiumModal 
-        opened={showPremiumModal} 
-        onClose={() => {
-          setShowPremiumModal(false);
-          setIsLimitReached(false);
-        }} 
-        limitReached={isLimitReached}
-      />
-      <Container size="lg" py="xl">
-      
-      <Paper 
-        radius="lg" 
-        withBorder 
-        sx={{
-          overflow: 'hidden',
-          background: theme.colorScheme === 'dark' 
-            ? `linear-gradient(135deg, ${theme.colors.dark[7]}, ${theme.colors.dark[6]})`
-            : `linear-gradient(135deg, ${theme.white}, ${theme.colors.gray[0]})`,
-        }}
-      >
-        {/* Header */}
-        <Box 
-          p="lg" 
-          sx={{
-            background: theme.colorScheme === 'dark' 
-              ? `linear-gradient(45deg, ${theme.colors.teal[9]}, ${theme.colors.cyan[8]})`
-              : `linear-gradient(45deg, ${theme.colors.teal[6]}, ${theme.colors.cyan[5]})`,
-            color: 'white',
-            position: 'relative'
-          }}
-        >
-          <Group position="apart" align="flex-start" mb="md">
-            <Box>
-              <Title order={2} mb={5} style={{ color: 'white' }}>{t('mainTitle') || 'Create a New Learning Course'}</Title>
-              <Text color="white">{t('subtitle') || 'Design your personalized learning experience'}</Text>
-            </Box>
-          </Group>
+    <div className="create-course-container">
+      <PremiumModal opened={showPremiumModal} onClose={() => setShowPremiumModal(false)} limitReached={isLimitReached} />
 
-          {/* Progress indicator */}
-          <Progress 
-            value={(activeStep + 1) / steps.length * 100} 
-            color="white"
-            mt="md"
-            size="sm"
-            radius="xl"
-          />
-        </Box>
+      <div className="create-course-hero">
+        <div className="hero-shape-rocket" />
+        <Container size="lg">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+            <h1 className="page-title">Curate Your Knowledge</h1>
+            <p className="page-subtitle">Harness AI to build a specialized learning path tailored precisely to your goals and pace.</p>
+          </motion.div>
+        </Container>
+      </div>
 
-        {/* Content */}
-        <Box p="lg" style={{ minHeight: 350 }}>
-          {renderStepContent()}
-        </Box>
+      <div className="stepper-container-premium">
+        <Paper className="stepper-card-premium">
+          <Stepper
+            active={activeStep}
+            breakpoint="sm"
+            className="premium-stepper"
+            iconSize={48}
+          >
+            {steps.map((s, i) => (
+              <Stepper.Step key={i} label={s.label} description={s.description} icon={s.icon} />
+            ))}
+          </Stepper>
 
-        {/* Error Alert */}
-        {error && (
-          <Box px="lg">
-            <Alert 
-              icon={<IconAlertCircle size={16} />}
-              title={t('form.error.alertTitle') || 'Error'} 
-              color="red" 
-              mb="md"
-              onClose={() => setError(null)}
-              withCloseButton
-            >
+          <Box py={40} style={{ minHeight: 400 }}>
+            <AnimatePresence mode="wait">
+              {renderStepContent()}
+            </AnimatePresence>
+          </Box>
+
+          {error && (
+            <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red" mb="xl" radius="xl" variant="light" withCloseButton onClose={() => setError(null)}>
               {error}
             </Alert>
-          </Box>
-        )}
+          )}
 
-        {/* Footer */}
-        <Box 
-          p="lg" 
-          pt="sm"
-          sx={{
-            borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[3]}`,
-            backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0]
-          }}
-        >
+          <Divider mb="xl" />
+
           <Group position="apart">
             <Button
               variant="subtle"
-              leftIcon={<IconArrowLeft size={16} />}
               onClick={prevStep}
-              disabled={activeStep === 0 || isSubmitting || isUploading}
+              disabled={activeStep === 0 || isSubmitting}
+              className="nav-btn-premium prev-btn-premium"
+              leftIcon={<IconArrowLeft size={18} />}
             >
-              {t('buttons.back') || 'Previous'}
+              Previous
             </Button>
 
             {activeStep < steps.length - 1 ? (
               <Button
-                rightIcon={<IconArrowRight size={16} />}
                 onClick={nextStep}
                 disabled={!isStepValid(activeStep) || isUploading}
-                variant="gradient"
-                gradient={{ from: 'teal', to: 'cyan' }}
+                className="nav-btn-premium next-btn-premium"
+                rightIcon={<IconArrowRight size={18} />}
               >
-                {t('buttons.nextStep') || 'Next Step'}
+                Next Step
               </Button>
             ) : (
               <Button
-                leftIcon={<IconSparkles size={16} />}
                 onClick={handleSubmit}
-                disabled={!isStepValid(activeStep) || isSubmitting || isUploading}
+                disabled={!isStepValid(activeStep) || isSubmitting}
                 loading={isSubmitting}
-                variant="gradient"
-                gradient={{ from: 'green', to: 'teal' }}
-                size="md"
+                className="nav-btn-premium next-btn-premium"
+                leftIcon={<IconSparkles size={18} />}
               >
-                {isSubmitting ? (t('buttons.creating') || 'Creating Course...') : (t('buttons.createCourse') || 'Create Course')}
+                Generate Course
               </Button>
             )}
           </Group>
-        </Box>
-      </Paper>
-      </Container>
-    </>
+        </Paper>
+      </div>
+    </div>
   );
 }
 

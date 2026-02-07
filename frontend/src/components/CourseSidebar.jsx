@@ -14,8 +14,8 @@ import {
 } from '@tabler/icons-react';
 import { courseService } from '../api/courseService';
 import { useTranslation } from 'react-i18next';
-import {MainLink} from "../layouts/AppLayout.jsx";
-import {useMediaQuery} from "@mantine/hooks";
+import { MainLink } from "../layouts/AppLayout.jsx";
+import { useMediaQuery } from "@mantine/hooks";
 
 const ChapterLink = ({ chapter, activeChapter, index, handleChapterClick, handleNavigation, chapterId, courseId, opened, currentTab, isExpanded, ...props }) => {
   const [hasQuestions, setHasQuestions] = useState(false);
@@ -23,16 +23,13 @@ const ChapterLink = ({ chapter, activeChapter, index, handleChapterClick, handle
   const theme = useMantineTheme();
 
   useEffect(() => {
-    // If this chapter already has a quiz, don't poll.
     if (hasQuestions) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
 
-    // Poll for quiz questions for this specific chapter
     intervalRef.current = setInterval(async () => {
       try {
-        // Use chapter.id from the mapped chapter, not the active chapterId from params
         const questions = await courseService.getChapterQuestions(courseId, chapter.id);
         if (questions && questions.length > 0) {
           setHasQuestions(true);
@@ -42,120 +39,116 @@ const ChapterLink = ({ chapter, activeChapter, index, handleChapterClick, handle
         console.error(`Error polling for quiz in chapter ${chapter.id}:`, error);
         clearInterval(intervalRef.current);
       }
-    }, 500); // Poll every 500ms
+    }, 500);
 
-    // Cleanup function for when the component unmounts or dependencies change
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [courseId, chapter.id, hasQuestions]); // Dependencies for the effect
+  }, [courseId, chapter.id, hasQuestions]);
 
-  // When collapsed, render as a simple numbered button
   if (!opened) {
+    const isActive = chapterId === chapter.id.toString();
     return (
       <ActionIcon
         key={chapter.id}
-        variant={"light"}
-        size="xl"
-        color={chapter.is_completed ? 'green' : 'gray'}
+        variant={isActive ? "filled" : "light"}
+        size={44}
+        color={chapter.is_completed ? 'teal' : isActive ? 'teal' : 'gray'}
         onClick={() => handleNavigation(chapter.id, 'content')}
         style={{
           display: 'flex',
           justifyContent: 'center',
           width: '100%',
-          marginBottom: theme.spacing.xs,
-          minHeight: 48,
-          border: chapterId === chapter.id.toString()
-            ? `2px solid ${theme.colors.green[9]}`
-            : undefined,
+          marginBottom: 12,
+          borderRadius: 14,
+          boxShadow: isActive ? '0 8px 16px rgba(13, 148, 136, 0.2)' : 'none',
+          transition: 'all 0.3s ease',
         }}
         title={`${index + 1}. ${chapter.caption}`}
       >
-        <Text size="sm" weight={600}>{index + 1}</Text>
+        <Text size="sm" weight={800}>{index + 1}</Text>
       </ActionIcon>
     );
   }
 
-  // When expanded, render full navigation structure
+  const isCurrentChapter = chapterId === chapter.id.toString();
+
   return (
-    <div style={{
-      backgroundColor: chapterId === chapter.id.toString() ? (theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[1]) : undefined,
-    }}>
-    <NavLink
-      key={chapter.id}
-      label={`${index + 1}. ${chapter.caption}`}
-      opened={isExpanded}
-      onClick={() => handleChapterClick(chapter.id.toString())}
-      style={{
-        backgroundColor: chapterId === chapter.id.toString() ? (theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[1]) : undefined,
-      }}
-      icon={
-        <ThemeIcon variant="light" size="sm" color={chapter.is_completed ? 'green' : 'gray'}>
-          {chapter.is_completed ? <IconCircleCheck size={14} /> : <IconCircleDashed size={14} />}
-        </ThemeIcon>
-      }
-      rightSection={isExpanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
-    >
+    <Box mb={4}>
       <NavLink
-        label="Content"
-        icon={<IconFileText size={16} />}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleNavigation(chapter.id, 'content');
+        key={chapter.id}
+        label={
+          <Text size="sm" weight={700} sx={{ lineHeight: 1.4 }}>
+            {index + 1}. {chapter.caption}
+          </Text>
+        }
+        opened={isExpanded}
+        onClick={() => handleChapterClick(chapter.id.toString())}
+        className="chapter-nav-link"
+        sx={{
+          backgroundColor: isCurrentChapter ? (theme.colorScheme === 'dark' ? 'rgba(13, 148, 136, 0.1)' : 'rgba(13, 148, 136, 0.05)') : 'transparent',
+          borderLeft: isCurrentChapter ? `4px solid ${theme.colors.teal[6]}` : '4px solid transparent',
+          padding: '12px 16px',
         }}
-        active={chapterId === chapter.id.toString() && currentTab === 'content'}
-        styles={{
-          root: {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.05)', // Replace with your desired color
-            },
-          },
-        }}
-      />
-      {chapter.file_count > 0 && (
-        <NavLink
-          label="Files"
-          icon={<IconPhoto size={16} />}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleNavigation(chapter.id, 'files');
-          }}
-          active={chapterId === chapter.id.toString() && currentTab === 'files'}
-          styles={{
-            root: {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.05)', // Replace with your desired color
-            },
-          },
-          }}
-        />
-      )}
-      {hasQuestions && (
-        <NavLink
-          label="Quiz"
-          icon={<IconQuestionMark size={16} />}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleNavigation(chapter.id, 'quiz');
-          }}
-          active={chapterId === chapter.id.toString() && currentTab === 'quiz'}
-          styles={{
-            root: {
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.05)', // Replace with your desired color
-            },
-          },
-          }}
-        />
-      )}
-    </NavLink>
-    </div>
+        icon={
+          <ThemeIcon
+            variant={chapter.is_completed ? "filled" : "light"}
+            size={24}
+            radius="xl"
+            color={chapter.is_completed ? 'teal' : 'gray'}
+          >
+            {chapter.is_completed ? <IconCircleCheck size={14} /> : <IconCircleDashed size={14} />}
+          </ThemeIcon>
+        }
+        rightSection={isExpanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+      >
+        <Stack spacing={2} mt={4}>
+          <NavLink
+            label="Content"
+            icon={<IconFileText size={16} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigation(chapter.id, 'content');
+            }}
+            active={isCurrentChapter && currentTab === 'content'}
+            sx={{ borderRadius: 12, margin: '0 8px' }}
+            color="teal"
+          />
+          {chapter.file_count > 0 && (
+            <NavLink
+              label="Files"
+              icon={<IconPhoto size={16} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNavigation(chapter.id, 'files');
+              }}
+              active={isCurrentChapter && currentTab === 'files'}
+              sx={{ borderRadius: 12, margin: '0 8px' }}
+              color="teal"
+            />
+          )}
+          {hasQuestions && (
+            <NavLink
+              label="Quiz"
+              icon={<IconQuestionMark size={16} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNavigation(chapter.id, 'quiz');
+              }}
+              active={isCurrentChapter && currentTab === 'quiz'}
+              sx={{ borderRadius: 12, margin: '0 8px' }}
+              color="teal"
+            />
+          )}
+        </Stack>
+      </NavLink>
+    </Box>
   );
 };
 
-const CourseSidebar = ({opened, setopen}) => {
+const CourseSidebar = ({ opened, setopen }) => {
   const { t } = useTranslation(['navigation', 'app', 'settings']);
   const navigate = useNavigate();
   const location = useLocation();
@@ -321,52 +314,58 @@ const CourseSidebar = ({opened, setopen}) => {
       <MainLink
         {...link}
         key={link.label}
-        isActive={false} // Home is not active when we're in course view
+        isActive={false}
         collapsed={!opened}
         onNavigate={handleNavigate}
       />
 
       {opened ? (
-        <Button
-          variant="subtle"
-          fullWidth
+        <UnstyledButton
+          className="course-title-btn-premium"
           onClick={handleCourseTitleClick}
-          styles={(theme) => ({
-            root: { padding: `0 ${theme.spacing.md}px`, height: 'auto', marginBottom: theme.spacing.md, marginTop: 30 },
-            label: { whiteSpace: 'normal', fontSize: theme.fontSizes.lg, fontWeight: 700 },
-          })}
+          sx={{ width: 'calc(100% - 24px)', display: 'block' }}
         >
-          {course?.title && course?.title != "None" ? course?.title : 'Course Overview'}
-        </Button>
+          <Group spacing="sm" noWrap>
+            <ThemeIcon variant="light" color="teal" size="lg" radius="md">
+              <IconSchool size={20} />
+            </ThemeIcon>
+            <Text weight={900} size="sm" sx={{ flex: 1, lineHeight: 1.2 }}>
+              {course?.title && course?.title != "None" ? course?.title : 'Course Overview'}
+            </Text>
+          </Group>
+        </UnstyledButton>
       ) : (
         <ActionIcon
-          variant="transparent"
-          size="xl"
+          variant="light"
+          size={44}
+          color="teal"
           onClick={handleCourseTitleClick}
-          style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '30px 0' }}
+          style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '24px 0', borderRadius: 14 }}
           title={course?.title || 'Course Overview'}
         >
           <IconSchool size={24} />
         </ActionIcon>
       )}
 
-      {chapters.map((chapter, index) => 
-        (chapter.id !== null) ? (
-          <ChapterLink
-            key={chapter.id}
-            chapter={chapter}
-            index={index}
-            activeChapter={chapterId}
-            handleChapterClick={handleChapterClick}
-            handleNavigation={handleNavigation}
-            chapterId={chapterId}
-            courseId={courseId}
-            opened={opened}
-            currentTab={currentTab}
-            isExpanded={expandedChapters.has(chapter.id.toString())}
-          />
-        ) : <></>
-      )}
+      <Box px={opened ? 0 : 0}>
+        {chapters.map((chapter, index) =>
+          (chapter.id !== null) ? (
+            <ChapterLink
+              key={chapter.id}
+              chapter={chapter}
+              index={index}
+              activeChapter={chapterId}
+              handleChapterClick={handleChapterClick}
+              handleNavigation={handleNavigation}
+              chapterId={chapterId}
+              courseId={courseId}
+              opened={opened}
+              currentTab={currentTab}
+              isExpanded={expandedChapters.has(chapter.id.toString())}
+            />
+          ) : null
+        )}
+      </Box>
     </Box>
   );
 };

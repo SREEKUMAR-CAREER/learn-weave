@@ -19,7 +19,7 @@ if [ ! -f ".env" ]; then
 fi
 
 # Check if ChromaDB is running
-if ! sudo docker ps --format '{{.Names}}' 2>/dev/null | grep -q "learnweave-chromadb"; then
+if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "learnweave-chromadb"; then
     echo "⚠ Warning: ChromaDB is not running"
     echo "  Start it with: ./scripts/start-chromadb.sh"
     echo ""
@@ -52,4 +52,13 @@ echo "----------------------------------------"
 echo ""
 
 # Start the backend
+# Check for virtual environment and activate if present
+if [ -d "venv" ]; then
+    echo "Using virtual environment: venv"
+    source venv/bin/activate
+elif [ -d ".venv" ]; then
+    echo "Using virtual environment: .venv"
+    source .venv/bin/activate
+fi
+
 python3 -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000

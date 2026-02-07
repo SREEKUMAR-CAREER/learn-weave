@@ -10,92 +10,60 @@ import {
   FileButton,
   Text,
   Alert,
-  Space,
   Divider,
   Box,
-  createStyles,
   Transition,
   ActionIcon,
   Tooltip,
-  Card,
   Badge,
   SimpleGrid,
   useMantineTheme,
+  Stack,
+  Center,
+  Switch,
+  useMantineColorScheme
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { 
-  IconAlertCircle, 
-  IconUpload, 
-  IconPhoto, 
-  IconSettings, 
-  IconLock, 
-  IconTrash, 
+import {
+  IconAlertCircle,
+  IconUpload,
+  IconPhoto,
+  IconSettings,
+  IconLock,
+  IconTrash,
   IconUser,
   IconAt,
   IconKey,
   IconDeviceFloppy,
-  IconArrowUpRight
+  IconPalette,
+  IconShieldLock,
+  IconChevronRight,
+  IconSun,
+  IconMoonStars
 } from '@tabler/icons-react';
 import { useAuth } from '../contexts/AuthContext';
 import userService from '../api/userService';
 import { toast } from 'react-toastify';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconLanguage, IconSun, IconMoonStars } from '@tabler/icons-react';
-import { Switch, useMantineColorScheme } from '@mantine/core';
-
-// Create styles for the SettingsPage components
-const useStyles = createStyles((theme) => ({
-  settingsContainer: {
-    maxWidth: '900px', // Make it wider
-    width: '100%',
-    padding: theme.spacing.md,
-  },
-  cardContainer: {
-    // Removed hover effects
-    boxShadow: theme.shadows.sm,
-  },
-  avatarContainer: {
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl, // Increased spacing
-    marginTop: theme.spacing.md,
-  },
-  avatar: {
-    boxShadow: theme.shadows.md,
-    border: `3px solid ${theme.colors[theme.primaryColor][5]}`,
-  },
-  buttonGradient: {
-    background: theme.fn.gradient({ from: 'blue', to: 'cyan', deg: 45 }),
-  },
-  sectionTitle: {
-    borderBottom: `2px solid ${theme.colors[theme.primaryColor][5]}`, // Better contrast
-    paddingBottom: theme.spacing.xs,
-    marginBottom: theme.spacing.xl, // Increased spacing
-  },
-  formField: {
-    marginTop: theme.spacing.md,
-  },
-  submitButton: {
-    marginTop: theme.spacing.lg,
-  },
-}));
+import { motion, AnimatePresence } from 'framer-motion';
+import './SettingsPage.css';
 
 const MAX_FILE_SIZE_MB = 12;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 function SettingsPage() {
-  const { classes } = useStyles();
   const theme = useMantineTheme();
   const { user, setUser, loading: authLoading } = useAuth();
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const dark = colorScheme === 'dark';
-  const { t, i18n } = useTranslation('settings');
+  const { t } = useTranslation('settings');
+
+  const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [passwordError, setPasswordError] = useState(null);  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [passwordError, setPasswordError] = useState(null);
+  const [profileImageFile, setProfileImageFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(user?.profile_image_base64 || null);
   const resetRef = useRef(null);
 
@@ -123,119 +91,65 @@ function SettingsPage() {
         value !== values.new_password ? t('validation.passwordsDoNotMatch', 'Passwords do not match') : null,
     },
   });
+
   useEffect(() => {
-    // Update form values from user context, but only when component mounts or user object changes
     if (user) {
-      // Only update the form if the form values are empty or if they're different from the user context
-      // This prevents overwriting user input during typing
-      const currentUsername = generalForm.values.username;
-      const currentEmail = generalForm.values.email;
-      
-      if (!currentUsername || (currentUsername !== user.username && currentUsername === '')) {
+      if (!generalForm.values.username || generalForm.values.username === '') {
         generalForm.setFieldValue('username', user.username || '');
       }
-      if (!currentEmail || (currentEmail !== user.email && currentEmail === '')) {
+      if (!generalForm.values.email || generalForm.values.email === '') {
         generalForm.setFieldValue('email', user.email || '');
       }
     }
 
-    // Handle preview image logic
-    if (profileImageFile) { // A new local file is selected, this takes precedence for preview
+    if (profileImageFile) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result); // This is a data URI
-      };
+      reader.onloadend = () => setPreviewImage(reader.result);
       reader.readAsDataURL(profileImageFile);
-    } else if (user && user.profile_image_base64) { // No local file, but user has an image in context (from DB)
-      const rawBase64FromDB = user.profile_image_base64;
-      // Convert raw base64 string from DB to a data URI. Assuming JPEG as a common default.
-      // A more robust solution would involve storing/retrieving the MIME type from the backend.
-      if (rawBase64FromDB && !rawBase64FromDB.startsWith('data:image')) {
-        setPreviewImage(`data:image/jpeg;base64,${rawBase64FromDB}`);
-      } else if (rawBase64FromDB) { // It might already be a data URI (less likely with current backend)
-        setPreviewImage(rawBase64FromDB);
-      } else {
-        setPreviewImage(null);
-      }
-    } else { // No local file, and no image in user context (or no user)
+    } else if (user?.profile_image_base64) {
+      const img = user.profile_image_base64;
+      setPreviewImage(img.startsWith('data:image') ? img : `data:image/jpeg;base64,${img}`);
+    } else {
       setPreviewImage(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, profileImageFile]); // Removed generalForm from dependencies to prevent form reset during typing
+  }, [user, profileImageFile]);
 
   const handleFileChange = (file) => {
     if (file) {
       if (file.size > MAX_FILE_SIZE_BYTES) {
         toast.error(t('toast.fileTooLarge', { maxSize: MAX_FILE_SIZE_MB }));
-        if (resetRef.current) {
-          resetRef.current();
-        }
-        setProfileImageFile(null);
+        resetRef.current?.();
         return;
       }
       setProfileImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setProfileImageFile(null);
-      setPreviewImage(user?.profile_image_base64 || null);
-      if (resetRef.current) {
-        resetRef.current();
-      }
     }
   };
 
   const handleRemoveImage = () => {
     setProfileImageFile(null);
     setPreviewImage(null);
-    if (resetRef.current) {
-      resetRef.current();
-    }
+    resetRef.current?.();
   };
 
   const handleGeneralSubmit = async (formValues) => {
     setIsLoading(true);
     setError(null);
     try {
-      const userDataToUpdate = {
-        username: formValues.username,
-      };
-
-      // Ensure user and user.id are available
-      if (!user || !user.id) {
-        throw new Error(t('authError.userIdMissing', "User ID is missing, please log in again."));
-      }
+      const userDataToUpdate = { username: formValues.username };
+      if (!user?.id) throw new Error(t('authError.userIdMissing', "User ID missing"));
 
       if (profileImageFile || previewImage !== user.profile_image_base64) {
         userDataToUpdate.profile_image_base64 = previewImage;
       }
 
       const updatedUser = await userService.updateUser(user.id, userDataToUpdate);
-      
-      // Update user context with the full updated user object from the backend
-      setUser(updatedUser); 
-      toast.success(t('toast.profileUpdateSuccess', 'Profile updated successfully!'));
-      setProfileImageFile(null); // Clear the selected file state
-      // No need to setPreviewImage here, it's handled by the updatedUser in context
-      
+      setUser(updatedUser);
+      toast.success(t('toast.profileUpdateSuccess', 'Profile updated!'));
+      setProfileImageFile(null);
     } catch (err) {
-      console.error("Error updating profile:", err);
-      let errorMessage = err.message || t('toast.profileUpdateErrorFallback', 'Failed to update profile.');
-      if (err.response && err.response.data) {
-        if (typeof err.response.data.detail === 'string') {
-          errorMessage = err.response.data.detail;
-        } else if (Array.isArray(err.response.data.detail) && err.response.data.detail.length > 0) {
-          // Handle cases where detail might be an array of error objects (e.g., Pydantic validation errors)
-          errorMessage = err.response.data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
-        } else if (typeof err.response.data.detail === 'object') {
-            errorMessage = JSON.stringify(err.response.data.detail);
-        }
-      }
-      setError(errorMessage);
-      toast.error(errorMessage);
+      const msg = err.response?.data?.detail || err.message;
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -246,302 +160,240 @@ function SettingsPage() {
     setPasswordError(null);
     try {
       await userService.changePassword(user.id, values.old_password, values.new_password);
-      toast.success(t('toast.passwordChangeSuccess', 'Password changed successfully!'));
+      toast.success(t('toast.passwordChangeSuccess', 'Password updated!'));
       passwordForm.reset();
     } catch (err) {
-      console.error("Error changing password:", err);
-      const errorMessage = err.response?.data?.detail || err.message || t('toast.passwordChangeErrorFallback', 'Failed to change password.');
-      setPasswordError(errorMessage);
-      toast.error(errorMessage);
+      const msg = err.response?.data?.detail || err.message;
+      setPasswordError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
   };
-  if (authLoading) {
-    return (
-      <Container className={classes.settingsContainer} size="xl" px="xs">
-        <Title order={2} className={classes.sectionTitle}>
-          <Group spacing="sm">
-            <IconSettings size={24} />
-            {t('appearanceSettings', 'Appearance')}
-          </Group>
-        </Title>
-        
-        <Paper withBorder p="md" radius="md" className={classes.cardContainer} mb="xl">
-          <Group position="apart">
-            <div>
-              <Text weight={600}>{t('darkMode', 'Dark Mode')}</Text>
-              <Text size="sm" color="dimmed">
-                {dark ? t('darkModeOn', 'Dark theme is enabled') : t('darkModeOff', 'Light theme is enabled')}
-              </Text>
-            </div>
-            <Switch
-              checked={dark}
-              onChange={() => toggleColorScheme()}
-              size="lg"
-              onLabel={<IconSun size={16} stroke={2.5} color={theme.colors.yellow[4]} />}
-              offLabel={<IconMoonStars size={16} stroke={2.5} color={theme.colors.blue[6]} />}
-            />
-          </Group>
-        </Paper>
-        
-        <Title order={2} className={classes.sectionTitle} mt="xl">
-          <Group spacing="sm">
-            <IconSettings size={24} />
-            {t('generalSettings', 'General Settings')}
-          </Group>
-        </Title>
-        
-        <Paper withBorder shadow="md" p="xl" radius="md">
-          <Group position="center">
-            <Text size="lg" weight={500}>{t('loadingUserSettings', 'Loading user settings...')}</Text>
-          </Group>
-        </Paper>
-      </Container>
-    );
-  }
 
-  // Add a check for user.id as well, as it's crucial for API calls
-  if (!user || !user.id) {
-    return (
-      <Container className={classes.settingsContainer} size="xl" px="xs">
-        <Paper withBorder shadow="md" p="xl" radius="md">
-          <Alert icon={<IconAlertCircle size={20} />} title={t('authError.title', 'Authentication Error')} color="red">
-            {t('authError.userNotFound', 'User not found or incomplete user data. Please login again.')}
-          </Alert>
-        </Paper>
-      </Container>
-    );
-  }
+  if (authLoading) return <Center h="80vh"><Text weight={700}>Loading Premium Experience...</Text></Center>;
+
+  const TabItem = ({ id, icon: Icon, label }) => (
+    <div
+      className={`settings-nav-item ${activeTab === id ? 'active' : ''}`}
+      onClick={() => setActiveTab(id)}
+    >
+      <Icon size={20} />
+      <Text sx={{ flex: 1 }}>{label}</Text>
+      {activeTab === id && <IconChevronRight size={16} />}
+    </div>
+  );
+
   return (
-    <Container className={classes.settingsContainer} size="xl" px="xs">
-      <Title order={1} align="center" mb="xl" className={classes.sectionTitle}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-          <IconUser size={28} stroke={1.5} color={theme.colors[theme.primaryColor][6]} />
-          <Text gradient={{ from: theme.primaryColor, to: theme.colors[theme.primaryColor][4], deg: 45 }} 
-                inherit variant="gradient">{t('pageTitle', 'Account Settings')}</Text>
-        </Box>
-      </Title>
+    <Container size="xl" className="settings-container">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="settings-hero"
+      >
+        <Title className="settings-hero-title">{t('pageTitle', 'Account Settings')}</Title>
+        <Text color="dimmed" size="lg" weight={500}>Customize your experience and manage your profile</Text>
+      </motion.div>
 
-      {error && (
-        <Alert 
-          icon={<IconAlertCircle size={18} />} 
-          title={t('updateErrorAlertTitle', 'Update Error')} 
-          color="red" 
-          withCloseButton 
-          onClose={() => setError(null)}
-          mb="lg"
-          radius="md"
+      <div className="settings-grid">
+        {/* Navigation Sidebar */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
         >
-          {error}
-        </Alert>
-      )}
+          <Paper className="settings-card" p="md">
+            <Stack spacing={8}>
+              <TabItem id="profile" icon={IconUser} label="Profile Info" />
+              <TabItem id="security" icon={IconShieldLock} label="Security" />
+              <TabItem id="appearance" icon={IconPalette} label="Appearance" />
+            </Stack>
+          </Paper>
+        </motion.div>
 
-      <SimpleGrid cols={1} spacing="xl" breakpoints={[{ minWidth: 'md', cols: 1 }]}>
-        {/* Appearance Settings Card */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder className={classes.cardContainer}>
-          <Card.Section p="md" bg={theme.colorScheme === 'dark' ? theme.fn.rgba(theme.colors.blue[9], 0.2) : theme.colors.blue[0]}>
-            <Group position="apart">
-              <Group spacing="xs">
-                <IconSettings size={24} stroke={1.5} color={theme.colors.blue[theme.colorScheme === 'dark' ? 4 : 6]} />
-                <Title order={3}>{t('appearance.title', 'Appearance')}</Title>
-              </Group>
-              <Badge color="blue" variant="light">{t('appearance.theme', 'Theme')}</Badge>
-            </Group>
-          </Card.Section>
-          
-          <Box mt="md" p="md">
-            <Group position="apart">
-              <div>
-                <Text weight={600}>{t('appearance.darkMode', 'Dark Mode')}</Text>
-                <Text size="sm" color="dimmed">
-                  {dark 
-                    ? t('appearance.darkModeOn', 'Dark theme is enabled') 
-                    : t('appearance.darkModeOff', 'Light theme is enabled')}
-                </Text>
-              </div>
-              <Switch
-                checked={dark}
-                onChange={() => toggleColorScheme()}
-                size="lg"
-                onLabel={<IconSun size={16} stroke={2.5} color={theme.colors.yellow[4]} />}
-                offLabel={<IconMoonStars size={16} stroke={2.5} color={theme.colors.blue[6]} />}
-              />
-            </Group>
-          </Box>
-        </Card>
+        {/* Content Area */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <AnimatePresence mode="wait">
+            {activeTab === 'profile' && (
+              <motion.div
+                key="profile"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <div className="settings-card">
+                  <div className="settings-card-header">
+                    <IconUser size={24} color="var(--primary-teal)" />
+                    <Title order={3}>General Information</Title>
+                  </div>
+                  <div className="settings-card-body">
+                    <form onSubmit={generalForm.onSubmit(handleGeneralSubmit)}>
+                      <div className="settings-avatar-wrapper">
+                        <Avatar
+                          src={previewImage}
+                          className="settings-avatar-main"
+                        >
+                          {!previewImage && user?.username?.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <FileButton resetRef={resetRef} onChange={handleFileChange} accept="image/*">
+                          {(props) => (
+                            <div className="settings-avatar-badge" {...props}>
+                              <IconPhoto size={20} />
+                            </div>
+                          )}
+                        </FileButton>
+                        {previewImage && (
+                          <ActionIcon
+                            color="red"
+                            variant="filled"
+                            radius="xl"
+                            size="lg"
+                            onClick={handleRemoveImage}
+                            sx={{ position: 'absolute', top: 0, right: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          >
+                            <IconTrash size={18} />
+                          </ActionIcon>
+                        )}
+                      </div>
 
-        {/* General Information Card */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder className={classes.cardContainer}>
-          <Card.Section p="md" bg={theme.colorScheme === 'dark' ? theme.fn.rgba(theme.colors[theme.primaryColor][9], 0.2) : theme.colors[theme.primaryColor][0]}>
-            <Group position="apart">
-              <Group spacing="xs">
-                <IconSettings size={24} stroke={1.5} color={theme.colors[theme.primaryColor][theme.colorScheme === 'dark' ? 4 : 6]} />
-                <Title order={3}>{t('general.cardTitle', 'General Information')}</Title>
-              </Group>
-              <Badge color={theme.primaryColor} variant="light">{t('general.badge', 'Profile')}</Badge>
-            </Group>
-          </Card.Section>
-          
-          <form onSubmit={generalForm.onSubmit(handleGeneralSubmit)}>
-            <Box className={classes.avatarContainer}>              <Transition mounted={true} transition="pop" duration={300} timingFunction="ease">
-                {(styles) => (
-                  <Avatar 
-                    src={previewImage} 
-                    size={150} 
-                    radius={150} 
-                    mx="auto"
-                    style={{ ...styles }}
-                    alt={t('general.avatarAlt', 'Profile Preview')}
-                    className={classes.avatar}
-                  >
-                    {!previewImage && user?.username?.charAt(0).toUpperCase()}
-                  </Avatar>
-                )}
-              </Transition>
-                <Group position="center" spacing="sm" mt="md">
-                <FileButton resetRef={resetRef} onChange={handleFileChange} accept="image/png,image/jpeg,image/gif">
-                  {(props) => (
-                    <Button 
-                      {...props} 
-                      leftIcon={<IconUpload size={16} />}
-                      variant="light"
-                      className={classes.buttonGradient}
-                      size="sm"
-                      radius="md"
+                      <SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+                        <TextInput
+                          label="Username"
+                          placeholder="Your unique name"
+                          icon={<IconUser size={18} />}
+                          className="premium-input"
+                          {...generalForm.getInputProps('username')}
+                        />
+                        <TextInput
+                          label="Email Address"
+                          placeholder="your@email.com"
+                          icon={<IconAt size={18} />}
+                          className="premium-input"
+                          disabled
+                          {...generalForm.getInputProps('email')}
+                        />
+                      </SimpleGrid>
+
+                      <Button
+                        type="submit"
+                        className="premium-button"
+                        fullWidth
+                        mt={40}
+                        loading={isLoading}
+                        leftIcon={<IconDeviceFloppy size={20} />}
+                      >
+                        Save Profile Changes
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'security' && (
+              <motion.div
+                key="security"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <div className="settings-card">
+                  <div className="settings-card-header">
+                    <IconLock size={24} color="#f59e0b" />
+                    <Title order={3}>Security Settings</Title>
+                  </div>
+                  <div className="settings-card-body">
+                    {passwordError && <Alert color="red" mb="lg" icon={<IconAlertCircle />}>{passwordError}</Alert>}
+                    <form onSubmit={passwordForm.onSubmit(handleChangePassword)}>
+                      <Stack spacing="xl">
+                        <PasswordInput
+                          label="Current Password"
+                          icon={<IconKey size={18} />}
+                          className="premium-input"
+                          {...passwordForm.getInputProps('old_password')}
+                        />
+                        <PasswordInput
+                          label="New Password"
+                          icon={<IconKey size={18} />}
+                          className="premium-input"
+                          {...passwordForm.getInputProps('new_password')}
+                        />
+                        <PasswordInput
+                          label="Confirm New Password"
+                          icon={<IconKey size={18} />}
+                          className="premium-input"
+                          {...passwordForm.getInputProps('confirm_new_password')}
+                        />
+                      </Stack>
+                      <Button
+                        type="submit"
+                        className="premium-button"
+                        color="orange"
+                        fullWidth
+                        mt={40}
+                        loading={isLoading}
+                        leftIcon={<IconShieldLock size={20} />}
+                        sx={{ background: 'linear-gradient(135deg, #f59e0b, #d97706) !important' }}
+                      >
+                        Update My Password
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'appearance' && (
+              <motion.div
+                key="appearance"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <div className="settings-card">
+                  <div className="settings-card-header">
+                    <IconPalette size={24} color="#6366f1" />
+                    <Title order={3}>Appearance & Interface</Title>
+                  </div>
+                  <div className="settings-card-body">
+                    <Paper
+                      p="xl"
+                      radius="xl"
+                      sx={(theme) => ({
+                        background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
+                        border: `1px dashed ${theme.colors.gray[4]}`
+                      })}
                     >
-                      {t('general.uploadImageButton', 'Upload Image')}
-                    </Button>
-                  )}
-                </FileButton>
-                
-                {previewImage && (
-                  <Button 
-                    variant="light"
-                    color="red" 
-                    size="sm" 
-                    radius="md"
-                    onClick={handleRemoveImage}
-                    leftIcon={<IconTrash size={16} />}
-                  >
-                    {t('general.removeImageButton', 'Remove')}
-                  </Button>
-                )}
-              </Group>
-              
-              {profileImageFile && (
-                <Text size="sm" color="dimmed" align="center" mt="xs">
-                  {t('general.imageSelectedPrefix', 'Selected:')} {profileImageFile.name}
-                </Text>
-              )}
-            </Box>            <Box mt="xl">
-              <TextInput
-                label={t('general.usernameLabel', 'Username')}
-                placeholder={t('general.usernamePlaceholder', 'Your username')}
-                icon={<IconUser size={16} />}
-                {...generalForm.getInputProps('username')}
-                className={classes.formField}
-                radius="md"
-                size="md"
-              />
-              
-              <TextInput
-                label={t('general.emailLabel', 'Email')}
-                placeholder={t('general.emailPlaceholder', 'Your email')}
-                icon={<IconAt size={16} />}
-                disabled
-                {...generalForm.getInputProps('email')}
-                className={classes.formField}
-                radius="md"
-                size="md"
-              />
-            </Box>
-              <Button 
-              type="submit" 
-              loading={isLoading} 
-              fullWidth 
-              mt="xl"
-              size="md"
-              leftIcon={<IconDeviceFloppy size={18} />}
-              className={classes.buttonGradient}
-              radius="md"
-            >
-              {t('general.saveButton', 'Save Changes')}
-            </Button>          </form>
-        </Card>
-
-        <Card shadow="sm" padding="lg" radius="md" withBorder className={classes.cardContainer}>
-          <Card.Section p="md" bg={theme.colorScheme === 'dark' ? theme.fn.rgba(theme.colors.orange[9], 0.2) : theme.colors.orange[0]}>
-            <Group position="apart">
-              <Group spacing="xs">
-                <IconLock size={24} stroke={1.5} color={theme.colors.orange[theme.colorScheme === 'dark' ? 4 : 6]} />
-                <Title order={3}>{t('security.cardTitle', 'Security Settings')}</Title>
-              </Group>
-              <Badge color="orange" variant="light">{t('security.badge', 'Password')}</Badge>
-            </Group>
-          </Card.Section>
-          
-          {passwordError && (
-            <Alert 
-              icon={<IconAlertCircle size={18} />} 
-              title={t('passwordErrorAlertTitle', 'Password Error')} 
-              color="red" 
-              withCloseButton 
-              onClose={() => setPasswordError(null)} 
-              my="md"
-              radius="md"
-            >
-              {passwordError}
-            </Alert>
-          )}
-          
-          <form onSubmit={passwordForm.onSubmit(handleChangePassword)}>            <Box mt="xl">
-              <PasswordInput
-                label={t('security.currentPasswordLabel', 'Current Password')}
-                placeholder={t('security.currentPasswordPlaceholder', 'Enter your current password')}
-                icon={<IconKey size={16} />}
-                {...passwordForm.getInputProps('old_password')}
-                className={classes.formField}
-                radius="md"
-                size="md"
-              />
-              
-              <PasswordInput
-                label={t('security.newPasswordLabel', 'New Password')}
-                placeholder={t('security.newPasswordPlaceholder', 'Choose a new password')}
-                icon={<IconKey size={16} />}
-                {...passwordForm.getInputProps('new_password')}
-                className={classes.formField}
-                radius="md"
-                size="md"
-              />
-              
-              <PasswordInput
-                label={t('security.confirmNewPasswordLabel', 'Confirm New Password')}
-                placeholder={t('security.confirmNewPasswordPlaceholder', 'Confirm your new password')}
-                icon={<IconKey size={16} />}
-                {...passwordForm.getInputProps('confirm_new_password')}
-                className={classes.formField}
-                radius="md"
-                size="md"
-              />
-            </Box>
-              <Button 
-              type="submit" 
-              loading={isLoading} 
-              fullWidth 
-              mt="xl"
-              size="md"
-              leftIcon={<IconLock size={18} />}
-              color="orange"
-              variant="filled"
-              radius="md"
-            >
-              {t('security.updatePasswordButton', 'Update Password')}
-            </Button>
-          </form>
-        </Card>
-      </SimpleGrid>
+                      <Group position="apart">
+                        <Stack spacing={4}>
+                          <Text weight={800} size="lg">Dark Mode Experience</Text>
+                          <Text color="dimmed" size="sm">Switch between light and dark themes</Text>
+                        </Stack>
+                        <Switch
+                          checked={dark}
+                          onChange={() => toggleColorScheme()}
+                          size="xl"
+                          color="teal"
+                          onLabel={<IconSun size={20} stroke={2.5} color="#fbbf24" />}
+                          offLabel={<IconMoonStars size={20} stroke={2.5} color="#6366f1" />}
+                          styles={{
+                            track: { height: 42, width: 80 },
+                            thumb: { width: 34, height: 34, left: 4 },
+                          }}
+                        />
+                      </Group>
+                    </Paper>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
     </Container>
   );
 }

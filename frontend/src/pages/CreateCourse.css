@@ -1,0 +1,223 @@
+/* LearnWeave Premium CreateCourse Styling */
+:root {
+    --primary-teal: #0d9488;
+    --primary-cyan: #06b6d4;
+    --gradient-main: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-cyan) 100%);
+    --bg-light: #f8fafc;
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    --card-hover-shadow: 0 20px 40px rgba(13, 148, 136, 0.12);
+    --transition-standard: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.create-course-container {
+    background: var(--bg-light);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* --- Premium Hero Section --- */
+.create-course-hero {
+    background: var(--gradient-main);
+    padding: 80px 0 140px;
+    position: relative;
+    overflow: hidden;
+    color: white;
+    border-radius: 0 0 64px 64px;
+    box-shadow: 0 20px 50px rgba(13, 148, 136, 0.2);
+}
+
+.hero-shape-rocket {
+    position: absolute;
+    top: -50px;
+    right: 10%;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+.create-course-hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.page-title {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 900;
+    margin-bottom: 12px;
+    letter-spacing: -1.5px;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.page-subtitle {
+    font-size: 18px;
+    opacity: 0.9;
+    max-width: 600px;
+    font-weight: 500;
+}
+
+/* --- Stepper & Form Container --- */
+.stepper-container-premium {
+    margin-top: -80px;
+    position: relative;
+    z-index: 10;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+}
+
+.stepper-card-premium {
+    background: white;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 40px;
+    padding: 48px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+    transition: var(--transition-standard);
+}
+
+.dark .stepper-card-premium {
+    background: rgba(31, 41, 55, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Mantine Stepper Overrides --- */
+.premium-stepper .mantine-Stepper-stepIcon {
+    border-radius: 16px !important;
+    border: 2px solid transparent !important;
+    transition: var(--transition-standard) !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+}
+
+.premium-stepper .mantine-Stepper-step[data-completed] .mantine-Stepper-stepIcon {
+    background: var(--gradient-main) !important;
+    color: white !important;
+}
+
+.premium-stepper .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon {
+    border-color: var(--primary-teal) !important;
+    background: white !important;
+    color: var(--primary-teal) !important;
+}
+
+.premium-stepper .mantine-Stepper-stepLabel {
+    font-weight: 700 !important;
+    font-size: 15px !important;
+}
+
+.premium-stepper .mantine-Stepper-stepDescription {
+    font-size: 12px !important;
+}
+
+/* --- Form Elements Premium --- */
+.premium-text-input input,
+.premium-textarea textarea {
+    border-radius: 20px !important;
+    padding: 16px 20px !important;
+    border: 2px solid #f1f5f9 !important;
+    font-size: 16px !important;
+    transition: var(--transition-standard) !important;
+}
+
+.premium-text-input input:focus,
+.premium-textarea textarea:focus {
+    border-color: var(--primary-teal) !important;
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1) !important;
+}
+
+.difficulty-card-premium {
+    border-radius: 20px !important;
+    padding: 20px !important;
+    transition: var(--transition-standard) !important;
+    cursor: pointer !important;
+}
+
+.difficulty-card-premium[data-selected="true"] {
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%) !important;
+    border-color: var(--primary-teal) !important;
+    transform: scale(1.02) !important;
+}
+
+/* --- Navigation Buttons --- */
+.nav-btn-premium {
+    height: 54px !important;
+    border-radius: 20px !important;
+    padding: 0 32px !important;
+    font-weight: 800 !important;
+    transition: var(--transition-standard) !important;
+}
+
+.next-btn-premium {
+    background: var(--gradient-main) !important;
+    box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2) !important;
+}
+
+.next-btn-premium:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 15px 30px rgba(13, 148, 136, 0.3) !important;
+}
+
+.prev-btn-premium {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: none !important;
+}
+
+.prev-btn-premium:hover {
+    background: #e2e8f0 !important;
+}
+
+/* --- Review Summary Cards --- */
+.summary-card-premium {
+    background: #f8fafc;
+    border-radius: 24px;
+    padding: 20px;
+    border: 1px solid #f1f5f9;
+}
+
+.dark .summary-card-premium {
+    background: #111827;
+    border-color: #374151;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .create-course-hero {
+        padding: 60px 0 100px;
+        border-radius: 0 0 40px 40px;
+    }
+
+    .stepper-container-premium {
+        margin-top: -60px;
+    }
+
+    .stepper-card-premium {
+        padding: 30px 20px;
+        border-radius: 32px;
+    }
+
+    .premium-stepper .mantine-Stepper-stepLabel {
+        display: none;
+    }
+}
