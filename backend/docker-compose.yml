@@ -1,0 +1,87 @@
+services:
+  # ============================================
+  # MySQL Database
+  # ============================================
+  mysql:
+    container_name: learnweave-mysql
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secure_password}
+      MYSQL_DATABASE: ${DB_NAME:-learnweave_db}
+      MYSQL_USER: ${DB_USER:-learnweave_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-your_secure_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_secure_password}"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - learnweave-network
+
+  # ============================================
+  # Backend Application
+  # ============================================
+  app:
+    container_name: learnweave
+    #image: learnweave:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - WORKERS=1
+      # Set Google credentials path for the container
+      - GOOGLE_APPLICATION_CREDENTIALS=/home/app/web/google-credentials.json
+      # Override DB_HOST for container networking
+      - DB_HOST=mysql
+    volumes:
+      # Mount the Google credentials file
+      - ./google-credentials.json:/home/app/web/google-credentials.json:ro
+    ports:
+      - "8127:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    restart: always
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - learnweave-network
+
+  # ============================================
+  # ChromaDB Vector Database
+  # ============================================
+  chromadb:
+    container_name: learnweave-chromadb
+    image: chromadb/chroma:latest
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - CHROMA_SERVER_ALLOW_RESET=true
+      - CHROMA_SERVER_CORS_ALLOW_ORIGINS=["*"]
+    volumes:
+      - chroma-data:/chroma/chroma
+    ports:
+      - "8001:8000"
+    restart: always
+    networks:
+      - learnweave-network
+
+volumes:
+  mysql-data:
+    driver: local
+  chroma-data:
+    driver: local
+
+networks:
+  learnweave-network:
+    driver: bridge
