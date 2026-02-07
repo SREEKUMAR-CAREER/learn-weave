@@ -1,0 +1,10 @@
+{
+  "title": "LearnWeave",
+  "tagline": "Your AI Learning Companion",
+  "description": "LearnWeave is a next-generation AI learning assistant that creates personalized courses tailored to your learning style, goals, and schedule.",
+  "colorSchemeToggleTitle": "Toggle color scheme",
+  "burgerAriaLabel": "Toggle navigation",
+  "userAvatarAlt": "User avatar",
+  "onlineStatusBadge": "Online",
+  "poweredBy": "Powered by AI"
+}
